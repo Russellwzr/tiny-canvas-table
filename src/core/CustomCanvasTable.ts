@@ -1,14 +1,12 @@
-import { CanvasColor, ICanvasContext2D } from "./CanvasContext2D";
-import { Align, CustomFilter, CustomRowColStyle, CustomSort,
+import { CanvasColor, ICanvasContext2D } from "./types/CanvasContext2D";
+import { Align, CustomRowColStyle, CustomSort,
          ICanvasTableColumn, ICanvasTableColumnConf, ICanvasTableColumnSort,
-         ICanvasTableRowColStyle, IEditRowItem, IUpdateRect, Sort } from "./CanvasTableColum";
-import { CanvasTableMode } from "./CanvasTableMode";
-import { ICanvasTableTouchEvent } from "./CanvasTableTouchEvent";
-import { CanvasTableIndex, CanvasTableIndexs, CanvasTableIndexType, CanvasTableRowItem,
-         CanvasTableRowItemSelect, ICanvasTableGroupItemColMode, ICanvasTableGroupItemRowMode,
-         ICanvasTableIndexsColMode, ICanvasTableIndexsRowMode, ICanvasTableRowItemSelectColMode } from "./CustomCanvasIndex";
-import { IDrawable } from "./Drawable";
-import { EventManagerClick, EventManagerClickHeader, EventManagerEdit, EventManagerReCalcForScrollView } from "./EventManager";
+         ICanvasTableRowColStyle, IEditRowItem, IUpdateRect, Sort } from "./types/CanvasTableColum";
+import { CanvasTableIndex, CanvasTableIndexs, CanvasTableRowItem,
+         CanvasTableRowItemSelect, 
+         ICanvasTableIndexsColMode, ICanvasTableRowItemSelectColMode } from "./types/CustomCanvasIndex";
+import { IDrawable } from "./types/Drawable";
+import { EventManagerClick, EventManagerClickHeader, EventManagerEdit, EventManagerReCalcForScrollView } from "./types/EventManager";
 import { IScrollViewConfig, ScrollView } from "./ScrollView";
 
 export interface IDrawConfig {
@@ -17,24 +15,6 @@ export interface IDrawConfig {
 
 type FrameRequestCallback = (time: number) => void;
 declare function requestAnimationFrame(callback: FrameRequestCallback): number;
-declare function setTimeout(callback: (...args: any[]) => void, ms: number, ...args: any[]): number;
-export interface ICanvasTableGroup {
-    field: string;
-    aggregate?: (data: ICanvasTableGroupItemRowMode | ICanvasTableGroupItemRowMode |
-                       ICanvasTableGroupItemColMode) => string;
-    renderer?: (data: ICanvasTableGroupItemRowMode | ICanvasTableGroupItemColMode,
-                canvasTable: CustomCanvasTable, context: ICanvasContext2D,
-                left: number, top: number, right: number, bottom: number,
-                width: number, height: number, r: number) => void;
-}
-export interface ICanvasRowTableGroup {
-    field: string;
-    aggregate?: (data: ICanvasTableIndexsRowMode) => string;
-    renderer?: (data: ICanvasTableIndexsRowMode,
-                canvasTable: CustomCanvasTable, context: ICanvasContext2D,
-                left: number, top: number, right: number, bottom: number,
-                width: number, height: number, r: number) => void;
-}
 
 /**
  * Interface to config style of CanvasTable
@@ -88,30 +68,7 @@ export interface ICanvasTableConfig {
      * Header: background color in header
      */
     headerBackgroundColor?: CanvasColor;
-    /**
-     * Group item: font color
-     */
-    groupItemFontColor?: CanvasColor;
-    /**
-     * Group item: arrow color
-     */
-    groupItemArrowColor?: CanvasColor;
-    /**
-     * Group item: background color in group
-     */
-    groupItemBackgroundColor?: CanvasColor;
-    /**
-     * Row group item: font color
-     */
-    rowGroupItemFontColor?: CanvasColor;
-    /**
-     * Row group item: arrow color
-     */
-    rowGroupItemArrowColor?: CanvasColor;
-    /**
-     * Row group item: background color in group
-     */
-    rowGroupItemBackgroundColor?: CanvasColor;
+
     /**
      * Background color
      */
@@ -147,12 +104,6 @@ interface ICanvasTableConf {
     headerDrawSortArrow: boolean;
     headerDrawSortArrowColor: CanvasColor;
     headerBackgroundColor: CanvasColor;
-    groupItemFontColor: CanvasColor;
-    groupItemArrowColor: CanvasColor;
-    groupItemBackgroundColor: CanvasColor;
-    rowGroupItemFontColor: CanvasColor;
-    rowGroupItemArrowColor: CanvasColor;
-    rowGroupItemBackgroundColor: CanvasColor;
     backgroundColor: CanvasColor;
     lineColor: CanvasColor;
     selectLineColor: CanvasColor;
@@ -167,9 +118,6 @@ const defaultConfig: ICanvasTableConf = {
     fontColor: "black",
     fontSize: 14,
     fontStyle: "",
-    groupItemArrowColor: "black",
-    groupItemBackgroundColor: "#F9D3CB",
-    groupItemFontColor: "back",
     headerBackgroundColor: "#add8e6",
     headerDrawSortArrow: true,
     headerDrawSortArrowColor: "purple",
@@ -179,9 +127,6 @@ const defaultConfig: ICanvasTableConf = {
     headerFontStyle: "bold",
     howerBackgroundColor: "#DCDCDC",
     lineColor: "black",
-    rowGroupItemArrowColor: "black",
-    rowGroupItemBackgroundColor: "#F9D3CB",
-    rowGroupItemFontColor: "black",
     selectLineColor: "green",
     sepraBackgroundColor: "#ECECEC",
 };
@@ -215,15 +160,12 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     private maxFontWidth: number = 1;
     private orgColum: Array<ICanvasTableColumnConf<T>> = [];
     private customRowColStyle?: CustomRowColStyle<T>;
-    private customFilter?: CustomFilter<T>;
     private customSort?: CustomSort<T>;
     private sortCol?: Array<ICanvasTableColumnSort<T>>;
-    private groupByCol?: ICanvasTableGroup[];
     private overRowValue?: number;
     private selectRowValue: CanvasTableRowItemSelect = null;
     private selectColValue?: ICanvasTableColumn<T>;
     private columnResize?: {x: number, col: ICanvasTableColumn<T>};
-    private touchClick?: {timeout: number, x: number, y: number};
 
     private lastCursor: string = "";
     private canvasHeight: number = 0;
@@ -243,8 +185,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
      * @param config config
      */
     public updateConfig(config: ICanvasTableConfig | undefined) {
-        this.config = {
-            ...defaultConfig, ...config };
+        this.config = { ...defaultConfig, ...config };
     }
 
     /**
@@ -547,7 +488,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             return;
         }
         
-        const dataIndex = this.dataIndex.index;
 
         const col = this.findColByPos(x);
         if (y <= this.headerHeight) {
@@ -570,15 +510,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                 this.selectRowValue = row;
                 this.askForReDraw();
             }
-        } else {
-            if (dataIndex.type === CanvasTableIndexType.GroupItems) {
-                if (row !== null && typeof row.select === "object") {
-                    row.select.isExpended = !row.select.isExpended;
-                    this.askForReDraw();
-                    this.reCalcForScrollView();
-                }
-            }
-        }
+        } 
         this.fireClick(row === null ? null : row.select, col);
         
     }
@@ -648,137 +580,68 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         if (this.scrollView !== undefined &&
             this.selectColValue !== undefined &&
             this.selectRowValue !== null &&
-            this.selectRowValue.mode === CanvasTableMode.ColMode &&
             typeof this.selectRowValue.select === "number") {
                 const index = this.selectRowValue.path[this.selectRowValue.path.length - 1];
-                if (index.type === CanvasTableIndexType.Index) {
-                    let y;
-                    switch (keycode) {
-                        case 40: // Down
-                            if (this.selectRowValue.index === index.list.length - 1) { return; }
-                            this.selectRowValue.index++;
-                            this.selectRowValue.select = index.list[this.selectRowValue.index];
-                            y = this.findTopPosByRow(this.selectRowValue);
-                            if (y !== undefined) {
-                                y = y - (this.canvasHeight -
-                                    ((this.headerHeight +
-                                        (this.scrollView.getHasScrollBarX() ? this.scrollView.getScrollbarSize() : 0))
-                                        * this.r));
-                                if (this.scrollView.getPosY() < y) {
-                                    this.scrollView.setPosY(y);
-                                }
+                let y;
+                switch (keycode) {
+                    case 40: // Down
+                        if (this.selectRowValue.index === index.list.length - 1) { return; }
+                        this.selectRowValue.index++;
+                        this.selectRowValue.select = index.list[this.selectRowValue.index];
+                        y = this.findTopPosByRow(this.selectRowValue);
+                        if (y !== undefined) {
+                            y = y - (this.canvasHeight -
+                                ((this.headerHeight +
+                                    (this.scrollView.getHasScrollBarX() ? this.scrollView.getScrollbarSize() : 0))
+                                    * this.r));
+                            if (this.scrollView.getPosY() < y) {
+                                this.scrollView.setPosY(y);
                             }
-                            this.askForReDraw();
-                            break;
-                        case 38: // Up
-                            if (this.selectRowValue.index === 0) { return; }
-                            this.selectRowValue.index--;
-                            this.selectRowValue.select = index.list[this.selectRowValue.index];
-                            y = this.findTopPosByRow(this.selectRowValue);
-                            if (y !== undefined) {
-                                y = y - this.headerHeight * this.r;
-                                if (this.scrollView.getPosY() > y) {
-                                    this.scrollView.setPosY(y);
-                                }
+                        }
+                        this.askForReDraw();
+                        break;
+                    case 38: // Up
+                        if (this.selectRowValue.index === 0) { return; }
+                        this.selectRowValue.index--;
+                        this.selectRowValue.select = index.list[this.selectRowValue.index];
+                        y = this.findTopPosByRow(this.selectRowValue);
+                        if (y !== undefined) {
+                            y = y - this.headerHeight * this.r;
+                            if (this.scrollView.getPosY() > y) {
+                                this.scrollView.setPosY(y);
                             }
-                            this.askForReDraw();
-                            break;
-                        case 37: // Left
-                            if (this.selectColValue.index === 0) { return; }
-                            this.selectColValue =  this.column[this.selectColValue.index - 1];
-                            if (this.selectColValue.leftPos < this.scrollView.getPosX()) {
-                                this.scrollView.setPosX(this.selectColValue.leftPos);
-                            }
-                            this.askForReDraw();
-                            break;
-                        case 39: // Right
-                            if (this.selectColValue.index === this.column.length - 1) { return; }
-                            this.selectColValue =  this.column[this.selectColValue.index + 1];
-                            if (this.selectColValue.rightPos > this.scrollView.getPosX() + this.canvasWidth) {
-                                this.scrollView.setPosX(this.selectColValue.rightPos - this.canvasWidth);
-                            }
-                            this.askForReDraw();
-                            break;
-                        case 13: // Enter
-                            if (this.allowEdit && typeof this.selectRowValue.select === "number") {
-                                if (!this.selectColValue.allowEdit) { return; }
-                                this.updateForEdit(this.selectColValue, this.selectRowValue.select);
-                            }
-                        default:
-                            // console.log(keycode);
-                            break;
-                    }
+                        }
+                        this.askForReDraw();
+                        break;
+                    case 37: // Left
+                        if (this.selectColValue.index === 0) { return; }
+                        this.selectColValue =  this.column[this.selectColValue.index - 1];
+                        if (this.selectColValue.leftPos < this.scrollView.getPosX()) {
+                            this.scrollView.setPosX(this.selectColValue.leftPos);
+                        }
+                        this.askForReDraw();
+                        break;
+                    case 39: // Right
+                        if (this.selectColValue.index === this.column.length - 1) { return; }
+                        this.selectColValue =  this.column[this.selectColValue.index + 1];
+                        if (this.selectColValue.rightPos > this.scrollView.getPosX() + this.canvasWidth) {
+                            this.scrollView.setPosX(this.selectColValue.rightPos - this.canvasWidth);
+                        }
+                        this.askForReDraw();
+                        break;
+                    case 13: // Enter
+                        if (this.allowEdit && typeof this.selectRowValue.select === "number") {
+                            if (!this.selectColValue.allowEdit) { return; }
+                            this.updateForEdit(this.selectColValue, this.selectRowValue.select);
+                        }
+                    default:
+                        break;
                 }
             } else {
                 if (this.scrollView && this.scrollView.OnKeydown(keycode)) {
                     this.setOverRow(undefined);
                 }
             }
-    }
-
-    protected TouchStart(e: ICanvasTableTouchEvent, offsetLeft: number, offsetTop: number) {
-        if (this.scrollView && this.scrollView.OnTouchStart(e, offsetLeft, offsetTop)) {
-            return;
-        }
-
-        if (e.changedTouches.length === 1) {
-            const y = e.changedTouches[0].pageY - offsetTop;
-            const x = e.changedTouches[0].pageX - offsetLeft;
-            this.touchClick = {timeout: setTimeout(() => {
-                if (this.dataIndex === undefined) { return; }
-                
-                const row = this.findRowByPos(y);
-                const col = this.findColByPos(x);
-
-                if (y > this.headerHeight) {
-                    if (row !== null && typeof row.select === "object") {
-                        row.select.isExpended = !row.select.isExpended;
-                        this.askForReDraw();
-                        this.reCalcForScrollView();
-                    }
-                    this.fireClick(row === null ? null : row.select, col);
-                } else {
-                    const colSplit = this.findColSplit(x);
-                    if (colSplit !== null) {
-                        this.columnResize = {x, col: this.column[colSplit]};
-                        return;
-                    }
-
-                    this.clickOnHeader(col);
-                    this.fireClickHeader(col);
-                }
-            }, 250), x, y};
-        } else {
-            this.clearTouchClick();
-        }
-    }
-    protected TouchMove(e: ICanvasTableTouchEvent, offsetLeft: number, offsetTop: number) {
-        const x = e.changedTouches[0].pageX - offsetLeft;
-        if (this.resizeColIfNeed(x)) {
-            return;
-        }
-
-        if (this.scrollView) {
-            this.scrollView.OnTouchMove(e, offsetLeft, offsetTop);
-        }
-        if (this.touchClick) {
-            if (e.changedTouches.length !== 1) {
-                this.clearTouchClick();
-                return;
-            }
-
-            const y = e.changedTouches[0].pageY - offsetTop;
-            if (Math.abs(x - this.touchClick.x) > 4 || Math.abs(y - this.touchClick.y) > 4) {
-                this.clearTouchClick();
-            }
-        }
-    }
-    protected TouchEnd(e: ICanvasTableTouchEvent, offsetLeft: number, offsetTop: number) {
-        this.columnResize = undefined;
-
-        if (this.scrollView) {
-            this.scrollView.OnTouchEnd(e);
-        }
     }
 
     protected calcRect(col: ICanvasTableColumn<T>, row: number): IUpdateRect | undefined {
@@ -856,8 +719,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     }
     protected findRowByPos(y: number): CanvasTableRowItemSelect {
         if (this.dataIndex === undefined || this.scrollView === undefined) { return null; }
-        if (this.dataIndex.mode === CanvasTableMode.RowMode) { return null; }
-        const mode = this.dataIndex.mode;
         let pos = -this.scrollView.getPosY() / this.r + this.headerHeight;
         const cellHeight = this.cellHeight;
 
@@ -871,7 +732,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                 i = Math.trunc((-pos + y) / cellHeight);
                 pos += i * cellHeight;
                 if (i < items.list.length) {
-                    return { mode, path: [items], select: items.list[i], index: i};
+                    return { path: [items], select: items.list[i], index: i};
                 }
                 return null;
             }
@@ -882,16 +743,13 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     }
     protected findTopPosByRow(rowValue: number | ICanvasTableRowItemSelectColMode): number | undefined {
         if (this.dataIndex === undefined || this.scrollView === undefined || rowValue === null) { return undefined; }
-        if (this.dataIndex.mode === CanvasTableMode.RowMode) { return undefined; }
         let row: number | undefined;
-        let rowGroup: ICanvasTableGroupItemColMode | undefined;
         if (typeof rowValue === "number") {
             row = rowValue;
         } else {
             if (typeof rowValue.select === "number") {
                 row = rowValue.select;
             } else {
-                rowGroup = rowValue.select;
             }
         }
         let pos = this.headerHeight * this.r;
@@ -916,18 +774,9 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     }
     protected reCalcIndexIfNeed(field: string) {
         let i;
-        if (this.customFilter || this.customSort) {
+        if (this.customSort) {
             this.calcIndex();
             return;
-        }
-
-        if (this.groupByCol) {
-            for (i = 0; i < this.groupByCol.length; i++) {
-                if (this.groupByCol[i].field === field) {
-                    this.calcIndex();
-                    return;
-                }
-            }
         }
 
         if (this.sortCol) {
@@ -946,18 +795,11 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
         const index: number[] = [];
         let i;
-        if (this.customFilter) {
-            for (i = 0; i < this.data.length; i++) {
-                if (this.customFilter(this.data, this.data[i], this.orgColum, i, this.editData[i] || {} )) {
-                    index[index.length] = i;
-                }
-            }
-        } else {
-            for (i = 0; i < this.data.length; i++) {
-                index[index.length] = i;
-            }
-        }
 
+        for (i = 0; i < this.data.length; i++) {
+            index[index.length] = i;
+        }
+        
         if (this.customSort) {
             const customSort = this.customSort;
             index.sort((a: number , b: number) => {
@@ -1016,51 +858,27 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             }
         }
         this.dataIndex =  {
-            index: { type: CanvasTableIndexType.Index, list: index },
-            mode: CanvasTableMode.ColMode,
+            index: { list: index }
         };  
         this.reCalcForScrollView();
     }
     protected reCalcForScrollView() {
         if (this.dataIndex === undefined) {return; }
         let w: number | undefined = 1;
-        if (this.dataIndex.mode === CanvasTableMode.ColMode) {
-            if (this.column) {
-                let i;
-                for (i = 0; i < this.column.length; i++) {
-                    w += this.column[i].width * this.r + 0;
-                }
-            } else {
-                w = undefined;
+
+        if (this.column) {
+            let i;
+            for (i = 0; i < this.column.length; i++) {
+                w += this.column[i].width * this.r + 0;
             }
+        } else {
+            w = undefined;
         }
 
         let h = 0;
         const cellHeight = this.cellHeight;
         const calc = ( index: CanvasTableIndexs ) => {
-            let i;
-            switch (index.type) {
-                case CanvasTableIndexType.Index:
-                    h += cellHeight * index.list.length;
-                    break;
-                case CanvasTableIndexType.GroupItems:
-                    for (i = 0; i < index.list.length; i++) {
-                        h += cellHeight;
-                        if (index.list[i].isExpended) {
-                            calc(index.list[i].child);
-                        }
-                    }
-                    break;
-                case CanvasTableIndexType.GroupRows:
-                    for (i = 0; i < index.list.length; i++) {
-                        h += cellHeight;
-                        if (index.list[i].isExpended) {
-                            h += cellHeight * this.column.length;
-                        }
-                    }
-
-                    break;
-            }
+            h += cellHeight * index.list.length;
         };
 
         calc(this.dataIndex.index);
@@ -1122,129 +940,125 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         let pos: number;
         let i: number;
         let maxPos: number;
-        switch (index.type) {
-            case CanvasTableIndexType.Index:
-                maxPos = this.canvasHeight + this.cellHeight + 5 * this.r;
-                i = Math.floor(this.scrollView.getPosY() / (height));
-                pos = (-this.scrollView.getPosY() + (i + 1) * height);
-                pos += 14 * this.r;
-                while (pos < maxPos) {
-                    if (i < index.list.length) {
-                        this.drawRowItem(this.context, index.list[i], i, pos, posX, height,
-                                         offsetLeft, colStart, colEnd, drawConf);
-                    } else {
-                        break;
-                    }
 
-                    pos += height;
-                    i++;
-                }
-
-                this.context.beginPath();
-                const end = pos - height + 4 * this.r;
-                const firstLine = -this.scrollView.getPosX() + this.column[colStart].leftPos;
-                this.context.moveTo(firstLine, headderHeight);
-                this.context.lineTo(firstLine, end);
-                for (let col = colStart; col < colEnd; col++) {
-                    const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
-                    this.context.moveTo(rightPos, headderHeight);
-                    this.context.lineTo(rightPos, end);
-                }
-                this.context.stroke();
+        maxPos = this.canvasHeight + this.cellHeight + 5 * this.r;
+        i = Math.floor(this.scrollView.getPosY() / (height));
+        pos = (-this.scrollView.getPosY() + (i + 1) * height);
+        pos += 14 * this.r;
+        while (pos < maxPos) {
+            if (i < index.list.length) {
+                this.drawRowItem(this.context, index.list[i], i, pos, posX, height,
+                                    offsetLeft, colStart, colEnd, drawConf);
+            } else {
                 break;
-        }
-        if (this.dataIndex.mode === CanvasTableMode.ColMode) {
-            // Headder
-            pos = 14 * this.r;
-            this.context.font = this.config.headerFontStyle + " " +
-                (this.config.headerFontSize * this.r) + "px " + this.config.headerFont;
-            this.context.fillStyle = this.config.headerFontColor;
-            this.context.clearRect(0, 0, this.canvasWidth, headderHeight);
-            this.context.beginPath();
-            this.context.strokeStyle = this.config.lineColor;
-
-            const leftPos = -this.scrollView.getPosX() + this.column[colStart].leftPos;
-            this.context.moveTo(leftPos, 0);
-            this.context.lineTo(leftPos, headderHeight);
-
-            for (let col = colStart; col < colEnd; col++) {
-                const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
-                this.context.moveTo(rightPos, 0);
-                this.context.lineTo(rightPos, headderHeight);
-            }
-            this.context.stroke();
-
-            this.context.textAlign = "left";
-            for (let col = colStart; col < colEnd; col++) {
-                let needClip: boolean;
-                const colItem = this.column[col];
-                const colWidth = this.column[col].width * this.r - offsetLeft * 2;
-                const data = this.column[col].header;
-                if (colWidth > data.length * this.maxFontWidth) {
-                    needClip = false;
-                } else if (colWidth < data.length * this.minFontWidth) {
-                    needClip = true;
-                } else {
-                    needClip = colWidth < this.context.measureText(data).width;
-                }
-
-                this.context.fillStyle = this.config.headerBackgroundColor;
-                if (needClip) {
-                    this.context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
-                        colItem.width * this.r - 1 * 2, height - 3);
-                    this.context.save();
-                    this.context.beginPath();
-                    this.context.rect(-this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos - height,
-                        colItem.width * this.r - offsetLeft * 2, height);
-                    this.context.clip();
-                    this.context.fillStyle = this.config.headerFontColor;
-                    this.context.fillText(data, -this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos);
-                    this.context.restore();
-                } else {
-                    this.context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
-                        colItem.width * this.r - 1 * 2, height - 3);
-                    this.context.fillStyle = this.config.headerFontColor;
-                    this.context.fillText(data,  -this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos);
-                }
-
-                if (this.config.headerDrawSortArrow) {
-                    let sort: Sort|undefined;
-                    if (this.sortCol) {
-                        let sortIndex;
-                        for (sortIndex = 0; sortIndex < this.sortCol.length; sortIndex++) {
-                            if (this.sortCol[sortIndex].col === this.column[col].orginalCol) {
-                                sort = this.sortCol[sortIndex].sort;
-                                break;
-                            }
-                        }
-                    }
-                    if (sort) {
-                        this.context.fillStyle = this.config.headerDrawSortArrowColor;
-                        const startX =  -this.scrollView.getPosX() + this.column[col].rightPos;
-                        if (sort === Sort.ascending) {
-                            this.context.beginPath();
-                            this.context.moveTo(startX - 12 * this.r, 5 * this.r);
-                            this.context.lineTo(startX - 4 * this.r, 5 * this.r);
-                            this.context.lineTo(startX - 8 * this.r, 14 * this.r);
-                            this.context.fill();
-                        } else {
-                            this.context.beginPath();
-                            this.context.moveTo(startX - 8 * this.r, 5 * this.r);
-                            this.context.lineTo(startX - 12 * this.r, 14 * this.r);
-                            this.context.lineTo(startX - 4 * this.r, 14 * this.r);
-                            this.context.fill();
-                        }
-                    }
-                }
             }
 
-            this.context.beginPath();
-            this.context.moveTo(0, pos + 4 * this.r);
-            this.context.lineTo(
-                Math.min(-this.scrollView.getPosX() + this.column[this.column.length - 1].rightPos, this.canvasWidth),
-                pos + 4 * this.r);
-            this.context.stroke();
+            pos += height;
+            i++;
         }
+
+        this.context.beginPath();
+        const end = pos - height + 4 * this.r;
+        const firstLine = -this.scrollView.getPosX() + this.column[colStart].leftPos;
+        this.context.moveTo(firstLine, headderHeight);
+        this.context.lineTo(firstLine, end);
+        for (let col = colStart; col < colEnd; col++) {
+            const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
+            this.context.moveTo(rightPos, headderHeight);
+            this.context.lineTo(rightPos, end);
+        }
+        this.context.stroke();
+                
+        // Headder
+        pos = 14 * this.r;
+        this.context.font = this.config.headerFontStyle + " " +
+            (this.config.headerFontSize * this.r) + "px " + this.config.headerFont;
+        this.context.fillStyle = this.config.headerFontColor;
+        this.context.clearRect(0, 0, this.canvasWidth, headderHeight);
+        this.context.beginPath();
+        this.context.strokeStyle = this.config.lineColor;
+
+        const leftPos = -this.scrollView.getPosX() + this.column[colStart].leftPos;
+        this.context.moveTo(leftPos, 0);
+        this.context.lineTo(leftPos, headderHeight);
+
+        for (let col = colStart; col < colEnd; col++) {
+            const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
+            this.context.moveTo(rightPos, 0);
+            this.context.lineTo(rightPos, headderHeight);
+        }
+        this.context.stroke();
+
+        this.context.textAlign = "left";
+        for (let col = colStart; col < colEnd; col++) {
+            let needClip: boolean;
+            const colItem = this.column[col];
+            const colWidth = this.column[col].width * this.r - offsetLeft * 2;
+            const data = this.column[col].header;
+            if (colWidth > data.length * this.maxFontWidth) {
+                needClip = false;
+            } else if (colWidth < data.length * this.minFontWidth) {
+                needClip = true;
+            } else {
+                needClip = colWidth < this.context.measureText(data).width;
+            }
+
+            this.context.fillStyle = this.config.headerBackgroundColor;
+            if (needClip) {
+                this.context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
+                    colItem.width * this.r - 1 * 2, height - 3);
+                this.context.save();
+                this.context.beginPath();
+                this.context.rect(-this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos - height,
+                    colItem.width * this.r - offsetLeft * 2, height);
+                this.context.clip();
+                this.context.fillStyle = this.config.headerFontColor;
+                this.context.fillText(data, -this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos);
+                this.context.restore();
+            } else {
+                this.context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
+                    colItem.width * this.r - 1 * 2, height - 3);
+                this.context.fillStyle = this.config.headerFontColor;
+                this.context.fillText(data,  -this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos);
+            }
+
+            if (this.config.headerDrawSortArrow) {
+                let sort: Sort|undefined;
+                if (this.sortCol) {
+                    let sortIndex;
+                    for (sortIndex = 0; sortIndex < this.sortCol.length; sortIndex++) {
+                        if (this.sortCol[sortIndex].col === this.column[col].orginalCol) {
+                            sort = this.sortCol[sortIndex].sort;
+                            break;
+                        }
+                    }
+                }
+                if (sort) {
+                    this.context.fillStyle = this.config.headerDrawSortArrowColor;
+                    const startX =  -this.scrollView.getPosX() + this.column[col].rightPos;
+                    if (sort === Sort.ascending) {
+                        this.context.beginPath();
+                        this.context.moveTo(startX - 12 * this.r, 5 * this.r);
+                        this.context.lineTo(startX - 4 * this.r, 5 * this.r);
+                        this.context.lineTo(startX - 8 * this.r, 14 * this.r);
+                        this.context.fill();
+                    } else {
+                        this.context.beginPath();
+                        this.context.moveTo(startX - 8 * this.r, 5 * this.r);
+                        this.context.lineTo(startX - 12 * this.r, 14 * this.r);
+                        this.context.lineTo(startX - 4 * this.r, 14 * this.r);
+                        this.context.fill();
+                    }
+                }
+            }
+        }
+
+        this.context.beginPath();
+        this.context.moveTo(0, pos + 4 * this.r);
+        this.context.lineTo(
+            Math.min(-this.scrollView.getPosX() + this.column[this.column.length - 1].rightPos, this.canvasWidth),
+            pos + 4 * this.r);
+        this.context.stroke();
         this.scrollView.draw();
     }
     private calcColum() {
@@ -1294,12 +1108,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         return true;
     }
 
-    private clearTouchClick() {
-        if (this.touchClick) {
-            clearTimeout(this.touchClick.timeout);
-            this.touchClick = undefined;
-        }
-    }
 
     private getDrawData(colItem: ICanvasTableColumn<T>, rowId: number, indexId: number): string {
         let data: string;

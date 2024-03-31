@@ -53,5 +53,6 @@ module.exports = {
 	devServer: {
 		open: true,
 		hot: true,
-	}
+	},
+  devtool: 'eval-source-map',
 };

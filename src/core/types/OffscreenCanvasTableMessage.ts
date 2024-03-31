@@ -1,6 +1,5 @@
 import { ICanvasTableColumn, IUpdateRect } from "./CanvasTableColum";
-import { CanvasTableEditAction } from "./CanvasTableEditAction";
-import { ICanvasTableTouchEvent } from "./CanvasTableTouchEvent";
+import { CanvasTableEditAction } from "../CanvasTableEdit";
 
 export enum OffscreenCanvasMesssageType {
     create = 0,
@@ -9,15 +8,14 @@ export enum OffscreenCanvasMesssageType {
     scroll = 10, focus = 15,
     mouseDown = 20, mouseMove = 21, mouseUp = 22, mouseLeave = 23, mouseMoveExtended = 24, mouseUpExtended = 25,
     mouseDblClick = 26,
-    touchStart = 30, touchMove = 31, touchEnd = 32,
     keyDown = 40,
     askForExtentedMouseMoveAndMaouseUp = 100, askForNormalMouseMoveAndMaouseUp = 101, setCursor = 102,
     updateForEdit = 103, removeUpdateForEdit = 104, locationForEdit = 105, onEditRemoveUpdateForEdit = 106,
-    }
+}
 
 interface IOffscreenCanvasMesssageParnet {
     type: OffscreenCanvasMesssageType;
-    mthbCanvasTable: number;
+    canvasTableId: number;
 }
 
 interface IOffscreenCanvasMessageCreate extends IOffscreenCanvasMesssageParnet {
@@ -68,14 +66,6 @@ interface IOffscreenCanvasMessageKeyDown extends IOffscreenCanvasMesssageParnet 
     type: OffscreenCanvasMesssageType.keyDown;
     keycode: number;
 }
-interface IOffscreenCanvasMesssageTouch extends IOffscreenCanvasMesssageParnet {
-    type: OffscreenCanvasMesssageType.touchStart |
-    OffscreenCanvasMesssageType.touchMove |
-    OffscreenCanvasMesssageType.touchEnd;
-    event: ICanvasTableTouchEvent;
-    offsetLeft: number;
-    offsetTop: number;
-}
 
 interface IOffscreenCanvasMessageGroupBy extends IOffscreenCanvasMesssageParnet {
     type: OffscreenCanvasMesssageType.setGroupBy;
@@ -124,7 +114,6 @@ export type OffscreenCanvasMesssageToWorker<T = any> =
     | IOffscreenCanvasMessageMouse
     | IOffscreenCanvasMessageMouseLeave
     | IOffscreenCanvasMessageKeyDown
-    | IOffscreenCanvasMesssageTouch
     | IOffscreenCanvasMessageFocus
     | IOffscreenCanvasMessageOnEditRemoveForEdit<T>
     ;

@@ -1,19 +1,17 @@
-import { ICanvasContext2D } from "./share/CanvasContext2D";
-import { Align, CustomFilter, CustomSort, ICanvasTableColumn, ICanvasTableColumnConf,
-     ICanvasTableColumnSort, Sort } from "./share/CanvasTableColum";
-import { CanvasTableEditAction } from "./share/CanvasTableEditAction";
-import { CanvasTableMode } from "./share/CanvasTableMode";
-import { CanvasTableRowItem } from "./share/CustomCanvasIndex";
-import { CustomCanvasTable, ICanvasTableConfig, ICanvasTableGroup } from "./share/CustomCanvasTable";
-import { OffscreenCanvasMesssageFromWorker, OffscreenCanvasMesssageToWorker, OffscreenCanvasMesssageType } from "./share/OffscreenCanvasTableMessage";
-import { ScrollView } from "./share/ScrollView";
+import { ICanvasContext2D } from "./types/CanvasContext2D";
+import { Align, CustomSort, ICanvasTableColumn, ICanvasTableColumnConf,
+     ICanvasTableColumnSort, Sort } from "./types/CanvasTableColum";
+import { CanvasTableEditAction } from "./CanvasTableEdit";
+import { CanvasTableRowItem } from "./types/CustomCanvasIndex";
+import { CustomCanvasTable, ICanvasTableConfig } from "./CustomCanvasTable";
+import { OffscreenCanvasMesssageFromWorker, OffscreenCanvasMesssageToWorker, OffscreenCanvasMesssageType } from "./types/OffscreenCanvasTableMessage";
+import { ScrollView } from "./ScrollView";
 
 declare function postMessage(message: any): void;
 
-export { Align, Sort, CustomCanvasTable, CanvasTableMode };
+export { Align, Sort, CustomCanvasTable };
 export type {
-    ICanvasTableColumnConf, CanvasTableRowItem,
-    ICanvasTableGroup, ICanvasTableColumnSort, CustomSort, CustomFilter, ICanvasContext2D
+    ICanvasTableColumnConf, CanvasTableRowItem, ICanvasTableColumnSort, CustomSort, ICanvasContext2D
 };
 
 export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
@@ -31,7 +29,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
     public updateColumns(col: Array<ICanvasTableColumnConf<T>>) {
         super.updateColumns(col);
         const data: OffscreenCanvasMesssageFromWorker = {
-            mthbCanvasTable: this.id,
+            canvasTableId: this.id,
             type: OffscreenCanvasMesssageType.removeUpdateForEdit,
         };
 
@@ -40,7 +38,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
     }
 
     public message(data: OffscreenCanvasMesssageToWorker) {
-        if (data.mthbCanvasTable !== this.id) { return; }
+        if (data.canvasTableId !== this.id) { return; }
 
         switch (data.type) {
             case OffscreenCanvasMesssageType.create:
@@ -89,15 +87,6 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
             case OffscreenCanvasMesssageType.mouseLeave:
                 this.mouseLeave();
                 break;
-            case OffscreenCanvasMesssageType.touchStart:
-                this.TouchStart(data.event, data.offsetLeft, data.offsetTop);
-                break;
-            case OffscreenCanvasMesssageType.touchMove:
-                this.TouchMove(data.event, data.offsetLeft, data.offsetTop);
-                break;
-            case OffscreenCanvasMesssageType.touchEnd:
-                this.TouchEnd(data.event, data.offsetLeft, data.offsetTop);
-                break;
             case OffscreenCanvasMesssageType.keyDown:
                 this.keydown(data.keycode);
                 break;
@@ -129,7 +118,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
             }
 
             const data: OffscreenCanvasMesssageFromWorker = {
-                mthbCanvasTable: this.id,
+                canvasTableId: this.id,
                 rect,
                 type: OffscreenCanvasMesssageType.locationForEdit,
             };
@@ -149,7 +138,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
         const data: OffscreenCanvasMesssageFromWorker<T> = {
             cellHeight: this.cellHeight,
             col,
-            mthbCanvasTable: this.id,
+            canvasTableId: this.id,
             rect,
             row,
             type: OffscreenCanvasMesssageType.updateForEdit,
@@ -167,21 +156,21 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
         super.setCanvasSize(width, height);
     }
     protected setCursor(cursor: string): void {
-        const data: OffscreenCanvasMesssageFromWorker = { cursor, mthbCanvasTable: this.id,
+        const data: OffscreenCanvasMesssageFromWorker = { cursor, canvasTableId: this.id,
               type: OffscreenCanvasMesssageType.setCursor };
         postMessage(data);
     }
     protected askForExtentedMouseMoveAndMaouseUp() {
-        const data: OffscreenCanvasMesssageFromWorker = { mthbCanvasTable: this.id,
+        const data: OffscreenCanvasMesssageFromWorker = { canvasTableId: this.id,
               type: OffscreenCanvasMesssageType.askForExtentedMouseMoveAndMaouseUp };
         postMessage(data);
     }
     protected askForNormalMouseMoveAndMaouseUp() {
-        const data: OffscreenCanvasMesssageFromWorker = { mthbCanvasTable: this.id,
+        const data: OffscreenCanvasMesssageFromWorker = { canvasTableId: this.id,
               type: OffscreenCanvasMesssageType.askForNormalMouseMoveAndMaouseUp };
         postMessage(data);
     }
-
+    
     private onEditRemoveUpdateForEdit(
           action: CanvasTableEditAction | undefined,
           cancel: boolean,

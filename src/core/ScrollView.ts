@@ -1,15 +1,7 @@
-import { CanvasColor, ICanvasContext2D } from "./CanvasContext2D";
-import { ICanvasTableTouchEvent } from "./CanvasTableTouchEvent";
-import { CircularBuffer } from "./CircularBuffer";
-import { IDrawable } from "./Drawable";
+import { CanvasColor, ICanvasContext2D } from "./types/CanvasContext2D";
+import { IDrawable } from "./types/Drawable";
 
 declare function setTimeout(callback: (...args: any[]) => void, ms: number, ...args: any[]): number;
-
-interface IMouseMove {
-    x: number;
-    y: number;
-    time: Date;
-}
 
 export interface IScrollViewConfig {
    buttonHoverColor?: CanvasColor;
@@ -47,7 +39,6 @@ export class ScrollView {
     private scrollBarThumbMaxY: number = -1;
     private scrollBarPosMaxY: number = -1;
     private pageY: number = -1;
-    private touchStartY: number = -1;
 
     private hasScrollBarX: boolean = false;
     private scrollBarThumbDownX: boolean = false;
@@ -59,9 +50,6 @@ export class ScrollView {
     private scrollBarThumbMaxX: number = -1;
     private scrollBarPosMaxX: number = -1;
     private pageX: number = -1;
-    private touchStartX: number = 1;
-
-    private lastmove: CircularBuffer<IMouseMove>;
 
     private scrollbarSize = 20;
     private cellHeight = 20;
@@ -78,7 +66,6 @@ export class ScrollView {
         this.askForExtentedMouseMoveAndMaouseUp = askForExtentedMouseMoveAndMaouseUp;
         this.askForNormalMouseMoveAndMaouseUp = askForNormalMouseMoveAndMaouseUp;
         this.drawable = drawable;
-        this.lastmove = new CircularBuffer<IMouseMove>(100, true);
         this.context = context;
         this.scrollViewConfig = {
              ...{
@@ -343,118 +330,7 @@ export class ScrollView {
                 return false;
         }
     }
-    public OnTouchStart(e: ICanvasTableTouchEvent, offsetLeft: number, offsetTop: number): boolean {
-        this.run = false;
-        this.lastmove.clear();
-        const y = e.changedTouches[0].pageY - offsetTop;
-        const x = e.changedTouches[0].pageX - offsetLeft;
-        if (this.scrollClick(x, y, true)) {
-            return true;
-        }
-        this.touchStartY = e.changedTouches[0].pageY;
-        this.touchStartX = e.changedTouches[0].pageX;
-        this.lastmove.push({ x: e.changedTouches[0].pageX, y: e.changedTouches[0].pageY, time: new Date() });
 
-        return false;
-    }
-    public OnTouchMove(e: ICanvasTableTouchEvent, offsetLeft: number, offsetTop: number) {
-        this.run = false;
-        if (this.scrollBarThumbDownY) {
-            const y = e.changedTouches[0].pageY - offsetTop;
-            this.setPosY(this.scrollBarPosMaxY * ((y - 20) / (this.canvasHeight / this.r - 20 * 2)));
-            return;
-        }
-
-        if (this.scrollBarThumbDownX) {
-            const x = e.changedTouches[0].pageX - offsetLeft;
-            this.setPosX(this.scrollBarPosMaxX * (x / (this.canvasWidth / this.r - 20 * 2)));
-            return;
-        }
-
-        if (this.lastmove.size() === 0) {
-            return;
-        }
-
-        this.lastmove.push({ x: e.changedTouches[0].pageX, y: e.changedTouches[0].pageY, time: new Date() });
-        this.setPosY(this.posYvalue - (e.changedTouches[0].pageY - this.touchStartY) * this.r);
-        this.setPosX(this.posXvalue - (e.changedTouches[0].pageX - this.touchStartX) * this.r);
-
-        this.touchStartY = e.changedTouches[0].pageY;
-        this.touchStartX = e.changedTouches[0].pageX;
-    }
-    public OnTouchEnd(e: ICanvasTableTouchEvent) {
-        if (e.touches.length === 0) {
-            let needToReDraw = false;
-            if (this.isOverScollThumbY) {
-                this.isOverScollThumbY = false;
-                needToReDraw = true;
-            }
-            if (this.isOverScrollUpY) {
-                this.isOverScrollUpY = false;
-                needToReDraw = true;
-            }
-            if (this.isOverScrollDownY) {
-                this.isOverScrollDownY = false;
-                needToReDraw = true;
-            }
-            if (this.isOverScollThumbX) {
-                this.isOverScollThumbX = false;
-                needToReDraw = true;
-            }
-            if (this.isOverScrollUpX) {
-                this.isOverScrollUpX = false;
-                needToReDraw = true;
-            }
-            if (this.isOverScrollDownX) {
-                this.isOverScrollDownX = false;
-                needToReDraw = true;
-            }
-            if (needToReDraw) {
-                this.drawMe();
-            }
-            this.scrollBarThumbDownY = false;
-            this.scrollBarThumbDownX = false;
-            if (this.run || this.timeout) {
-                clearTimeout(this.timeout);
-                this.timeout = undefined;
-                this.run = false;
-            }
-        }
-
-        const list = this.lastmove.export();
-        if (list.length > 2) {
-            let i;
-            for (i = list.length - 2;
-                 i >= 0 && (list[list.length - 1].time.getTime() - list[i].time.getTime()) < 1000;
-                 i--) {
-                /* */
-            }
-
-            if (i < 0) { i = 0; }
-            const time = list[list.length - 1].time.getTime() - list[i].time.getTime();
-            const speedY = this.r * (list[list.length - 1].y - list[i].y) / time;
-
-            if (Math.abs(speedY) > 1) {
-                this.speed = speedY * 10;
-                this.runXOrY = true;
-                this.run = true;
-                this.runStart = (new Date()).getTime();
-                this.drawable.askForReDraw();
-                return;
-            }
-
-            const speedX = this.r * (list[list.length - 1].x - list[i].x) / time;
-
-            if (Math.abs(speedX) > 1) {
-                this.speed = speedX * 10;
-                this.runXOrY = false;
-                this.run = true;
-                this.runStart = (new Date()).getTime();
-                this.drawable.askForReDraw();
-                return;
-            }
-        }
-    }
     public onScroll = (deltaMode: number, deltaX: number, deltaY: number) => {
         switch (deltaMode) {
             case 0: // DOM_DELTA_PIXEL	0x00	The delta values are specified in pixels.

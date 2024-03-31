@@ -1,5 +1,5 @@
 import { CanvasColor, ICanvasContext2D } from "./CanvasContext2D";
-import { CustomCanvasTable } from "./CustomCanvasTable";
+import { CustomCanvasTable } from "../CustomCanvasTable";
 
 export interface IEditRowItem { [field: string]: any; }
 
@@ -9,14 +9,10 @@ export type RenderValue<T = any> = (
     canvasTable: CustomCanvasTable, context: ICanvasContext2D, rowIndex: number,
     col: ICanvasTableColumnConf<T>, left: number, top: number, right: number, bottom: number,
     width: number, height: number, r: number, dataValue: string, row: T, data: T[]) => void;
-export type CustomFilter<T = any> = (
-    data: T[], row: T, col: Array<ICanvasTableColumnConf<T>>, index: number, edit: IEditRowItem) => boolean;
+
 export type CustomRowColStyle<T = any> = (data: T[], row: T, col: ICanvasTableColumnConf<T>,
                                           isOver: boolean, isSepra: boolean, dataRowCol: string)
                                  => ICanvasTableRowColStyle | undefined | null;
-
-export type GetLookup<T = any> = (row: number, data: string, col: ICanvasTableColumn<T>) => LookupValues;
-export type LookupValues = string[] | Array<{key: string, caption: string}>;
 
 export interface IUpdateRect {
     cellHeight: number;
@@ -43,8 +39,6 @@ export interface ICanvasTableColumn<T> {
     renderer?: RenderValue<T>;
     customData?: CustomData<T>;
     orginalCol: ICanvasTableColumnConf<T>;
-    lookupData?: LookupValues;
-    getLookup?: GetLookup<T>;
 }
 
 /**
@@ -92,7 +86,7 @@ export interface ICanvasTableRowColStyle {
 /**
  * Canvas Table Column Config
  */
-export interface ICanvasTableColumnConf<T = any, LookupKey = number> {
+export interface ICanvasTableColumnConf<T = any> {
     /**
      * Text in header
      */
@@ -121,14 +115,6 @@ export interface ICanvasTableColumnConf<T = any, LookupKey = number> {
      * function pointer to render string.
      */
     customData?: CustomData<T>;
-    /**
-     * lookup values
-     */
-    lookupData?: LookupValues;
-    /**
-     * Custom lookup value
-     */
-    getLookup?: GetLookup<T>;
 }
 
 export interface ICanvasTableColumnSort<T = any> {

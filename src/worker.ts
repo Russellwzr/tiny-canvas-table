@@ -1,5 +1,5 @@
 
-import { Align, OffscreenCanvasTableWorker, ICanvasTableColumnConf, CustomCanvasTable, ICanvasContext2D, CanvasTableMode } from './OffscreenCanvasTableWorker';
+import { Align, OffscreenCanvasTableWorker, ICanvasTableColumnConf, CustomCanvasTable, ICanvasContext2D } from './core/OffscreenCanvasTableWorker';
 
 
 function customDraw(canvasTable: CustomCanvasTable, context: ICanvasContext2D, rowIndex: number, col: ICanvasTableColumnConf, left: number, top: number, right: number, bottom: number, width: number, height: number, r: number, dataValue: any, row: any, data: any): void {
@@ -20,26 +20,13 @@ const col: ICanvasTableColumnConf[] = [
     {
         header: "Id",
         field: "__rownum__",
-        width: 80,
+        width: 100,
         align: Align.center
-    },
-    {
-        header: "Render",
-        field: "__rownum__",
-        width: 80,
-        renderer: customDraw,
-        visible: true
     },
     {
         header: "Country",
         field: "country",
-        width: 100
-    },
-    {
-        header: "Id",
-        field: "__rownum__",
-        width: 30,
-        align: Align.right
+        width: 200
     },
     {
         header: "Name",
@@ -54,9 +41,16 @@ const col: ICanvasTableColumnConf[] = [
     {
         header: "geonameid",
         field: "geonameid",
-        width: 100,
-        align: Align.right
-    }
+        width: 200,
+        align: Align.left
+    },
+    {
+        header: "Render",
+        field: "__rownum__",
+        width: 200,
+        renderer: customDraw,
+        visible: true
+    },
 ];
 
 const offscreenCanvasTableWorker = new OffscreenCanvasTableWorker(1, col);
@@ -73,7 +67,7 @@ httpRequest.open('GET', 'data.json', true);
 httpRequest.send();
 
 addEventListener('message', (message) => {
-    if (message.data.mthbCanvasTable !== undefined) {
+    if (message.data.canvasTableId !== undefined) {
         offscreenCanvasTableWorker.message(message.data);
         return;
     }

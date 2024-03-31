@@ -1,5 +1,9 @@
-import { ICanvasTableColumn, LookupValues } from "./CanvasTableColum";
-import { CanvasTableEditAction } from "./CanvasTableEditAction";
+import { ICanvasTableColumn } from "./types/CanvasTableColum";
+
+export enum CanvasTableEditAction {
+    moveNext,
+    movePrev,
+}
 
 export class CanvasTableEdit<T = any> {
     private hasBeenRemoved: boolean = false;
@@ -13,35 +17,9 @@ export class CanvasTableEdit<T = any> {
         this.column = col;
         this.row = row;
         this.onRemove = onRemve;
-        let lookup: LookupValues | undefined;
-        if (col.getLookup) {
-            lookup = col.getLookup(row, data, col);
-        }
-        if (!lookup) {
-            lookup = col.lookupData;
-        }
-        if (lookup !== undefined) {
-            const select = document.createElement("select");
-            this.inputeElement = select;
-            for (let i = 0, c = lookup.length; i < c; i++) {
-                const lookupItem = lookup[i];
-                const option = document.createElement("option");
-                if (typeof lookupItem === "string") {
-                    option.text = lookupItem;
-                    option.value = lookupItem;
-                } else {
-                    option.text = lookupItem.caption;
-                    option.value = lookupItem.key;
-                }
-                option.selected = option.value === data;
-                select.add(option);
-            }
-        } else {
-            this.inputeElement = document.createElement("input");
-            this.inputeElement.type = "text";
-            this.inputeElement.value = data;
-        }
-
+        this.inputeElement = document.createElement("input");
+        this.inputeElement.type = "text";
+        this.inputeElement.value = data;
         this.inputeElement.style.position = "absolute";
         this.inputeElement.style.border = "none";
 
