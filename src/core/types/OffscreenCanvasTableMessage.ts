@@ -1,5 +1,4 @@
 import { ICanvasTableColumn, IUpdateRect } from "./CanvasTableColum";
-import { CanvasTableEditAction } from "../CanvasTableEdit";
 
 export enum OffscreenCanvasMesssageType {
     create = 0,
@@ -97,7 +96,6 @@ interface IOffscreenCanvasMessageLocationForEdit extends IOffscreenCanvasMesssag
 }
 
 interface IOffscreenCanvasMessageOnEditRemoveForEdit<T> extends IOffscreenCanvasMesssageParnet {
-    action: CanvasTableEditAction | undefined;
     cancel: boolean;
     col?: ICanvasTableColumn<T>;
     newData: string;

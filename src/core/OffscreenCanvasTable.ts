@@ -1,6 +1,5 @@
 import { ICanvasTableColumn, IUpdateRect } from "./types/CanvasTableColum";
 import { CanvasTableEdit } from "./CanvasTableEdit";
-import { CanvasTableEditAction } from "./CanvasTableEdit";
 import { OffscreenCanvasMesssageFromWorker, OffscreenCanvasMesssageToWorker, OffscreenCanvasMesssageType } from "./types/OffscreenCanvasTableMessage";
 
 export class OffscreenCanvasTable <T = any> {
@@ -39,9 +38,7 @@ export class OffscreenCanvasTable <T = any> {
         this.canvas.addEventListener("mouseup", this.canvasMouseUp);
         this.canvas.addEventListener("mouseleave", this.canvasMouseLeave);
         this.canvas.addEventListener("keydown", this.canvasKeydown);
-        window.addEventListener("resize", () => {
-            this.resize();
-        });
+        window.addEventListener("resize", () => {this.resize();});
         worker.addEventListener("message", this.workerMessage);
     }
 
@@ -81,9 +78,9 @@ export class OffscreenCanvasTable <T = any> {
             type: OffscreenCanvasMesssageType.scroll,
         });
     }
+
     private canvasDblClick = (e: MouseEvent) => {
         e.preventDefault();
-        //  this.dblClick(e.clientX - this.canvas.offsetLeft, e.clientY - this.canvas.offsetTop);
         this.postMessage({
             canvasTableId: this.offscreenCanvasTableId,
             type: OffscreenCanvasMesssageType.mouseDblClick,
@@ -91,6 +88,7 @@ export class OffscreenCanvasTable <T = any> {
             y: e.clientY - this.canvas.offsetTop,
         });
     }
+
     private canvasMouseDown = (e: MouseEvent) => {
         e.preventDefault();
         this.canvas.focus();
@@ -101,6 +99,7 @@ export class OffscreenCanvasTable <T = any> {
             y: e.clientY - this.canvas.offsetTop,
         });
     }
+
     private canvasMouseMove = (e: MouseEvent) => {
         e.preventDefault();
         this.postMessage({
@@ -110,6 +109,7 @@ export class OffscreenCanvasTable <T = any> {
             y: e.clientY - this.canvas.offsetTop,
         });
     }
+
     private canvasMouseUp = (e: MouseEvent) => {
         e.preventDefault();
         this.postMessage({
@@ -119,6 +119,7 @@ export class OffscreenCanvasTable <T = any> {
             y: e.clientY - this.canvas.offsetTop,
         });
     }
+
     private canvasMouseLeave = () => {
         this.postMessage({
             canvasTableId: this.offscreenCanvasTableId,
@@ -142,8 +143,8 @@ export class OffscreenCanvasTable <T = any> {
             x: e.clientX - this.canvas.offsetLeft,
             y: e.clientY - this.canvas.offsetTop,
         });
-
     }
+
     private canvasMouseMoveExtended = (e: MouseEvent) => {
         e.preventDefault();
         this.postMessage({
@@ -156,7 +157,7 @@ export class OffscreenCanvasTable <T = any> {
 
     private workerMessage = (message: MessageEvent) => {
         if (message.data.canvasTableId !== this.offscreenCanvasTableId) { return; }
-        const data =  message.data as OffscreenCanvasMesssageFromWorker;
+        const data = message.data as OffscreenCanvasMesssageFromWorker;
         switch (data.type) {
             case OffscreenCanvasMesssageType.askForExtentedMouseMoveAndMaouseUp:
                 this.canvas.removeEventListener("mousemove", this.canvasMouseMove);
@@ -175,9 +176,8 @@ export class OffscreenCanvasTable <T = any> {
                 break;
             case OffscreenCanvasMesssageType.updateForEdit:
                 if (this.canvasTableEdit) {
-                    this.canvasTableEdit.doRemove(true, undefined);
+                    this.canvasTableEdit.doRemove(true);
                 }
-
                 this.canvasTableEdit = new CanvasTableEdit(data.col, data.row, data.value,
                     data.cellHeight, this.onEditRemove);
                 this.updateEditLocation(data.rect);
@@ -188,7 +188,7 @@ export class OffscreenCanvasTable <T = any> {
         }
     }
     
-    private onEditRemove = (cancel: boolean, newData: string, action: CanvasTableEditAction | undefined) => {
+    private onEditRemove = (cancel: boolean, newData: string) => {
         let row: number | undefined;
         let col: ICanvasTableColumn<T> | undefined;
         if (this.canvasTableEdit !== undefined) {
@@ -197,7 +197,6 @@ export class OffscreenCanvasTable <T = any> {
         }
         this.canvasTableEdit = undefined;
         this.postMessage({
-            action,
             cancel,
             col,
             canvasTableId: this.offscreenCanvasTableId,
@@ -205,11 +204,9 @@ export class OffscreenCanvasTable <T = any> {
             row,
             type: OffscreenCanvasMesssageType.onEditRemoveUpdateForEdit,
         });
-
-        if (action === undefined) {
-            this.canvas.focus();
-        }
+        this.canvas.focus();
     }
+
     private updateEditLocation(rect: IUpdateRect) {
         if (!this.canvasTableEdit) {
             return;
@@ -218,9 +215,7 @@ export class OffscreenCanvasTable <T = any> {
         const top = this.canvas.offsetTop + rect.y;
         const left = this.canvas.offsetLeft + rect.x;
 
-        this.canvasTableEdit.updateEditLocation(
-            top, left, rect.width, rect.cellHeight,
-            rect.clipTop, rect.clipRight, rect.clipBottom, rect.clipLeft);
+        this.canvasTableEdit.updateEditLocation(top, left, rect.width, rect.cellHeight);
     }
 
     private postMessage(data: OffscreenCanvasMesssageToWorker): void {

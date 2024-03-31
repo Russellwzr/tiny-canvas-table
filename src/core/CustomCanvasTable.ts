@@ -1,8 +1,8 @@
 import { CanvasColor, ICanvasContext2D } from "./types/CanvasContext2D";
-import { Align, CustomRowColStyle, CustomSort,
+import { Align, CustomRowColStyle, 
          ICanvasTableColumn, ICanvasTableColumnConf, ICanvasTableColumnSort,
          ICanvasTableRowColStyle, IEditRowItem, IUpdateRect, Sort } from "./types/CanvasTableColum";
-import { CanvasTableIndex, CanvasTableIndexs, CanvasTableRowItem,
+import { CanvasTableIndex, CanvasTableRowItem,
          CanvasTableRowItemSelect, 
          ICanvasTableIndexsColMode, ICanvasTableRowItemSelectColMode } from "./types/CustomCanvasIndex";
 import { IDrawable } from "./types/Drawable";
@@ -84,7 +84,7 @@ export interface ICanvasTableConfig {
     /**
      * Backgroud color when mouse is hover the row
      */
-    howerBackgroundColor?: CanvasColor;
+    hoverBackgroundColor?: CanvasColor;
     /**
      * Every secound row can have another backgound color sepra
      */
@@ -107,7 +107,7 @@ interface ICanvasTableConf {
     backgroundColor: CanvasColor;
     lineColor: CanvasColor;
     selectLineColor: CanvasColor;
-    howerBackgroundColor: CanvasColor;
+    hoverBackgroundColor: CanvasColor;
     sepraBackgroundColor: CanvasColor;
 }
 
@@ -125,7 +125,7 @@ const defaultConfig: ICanvasTableConf = {
     headerFontColor: "black",
     headerFontSize: 14,
     headerFontStyle: "bold",
-    howerBackgroundColor: "#DCDCDC",
+    hoverBackgroundColor: "#DCDCDC",
     lineColor: "black",
     selectLineColor: "green",
     sepraBackgroundColor: "#ECECEC",
@@ -153,14 +153,12 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     private eventEdit: EventManagerEdit[] = [];
 
     private needToCalc: boolean = true;
-    private needToCalcFont: boolean = true;
 
     private isFocus: boolean = false;
     private minFontWidth: number = 1;
     private maxFontWidth: number = 1;
-    private orgColum: Array<ICanvasTableColumnConf<T>> = [];
+    private orgColumn: Array<ICanvasTableColumnConf<T>> = [];
     private customRowColStyle?: CustomRowColStyle<T>;
-    private customSort?: CustomSort<T>;
     private sortCol?: Array<ICanvasTableColumnSort<T>>;
     private overRowValue?: number;
     private selectRowValue: CanvasTableRowItemSelect = null;
@@ -173,18 +171,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     private editData: { [index: number]: IEditRowItem } = {};
 
     constructor(config: ICanvasTableConfig | undefined) {
-        this.updateConfig(config);
-    }
-
-    public getScrollView(): ScrollView | undefined {
-        return this.scrollView;
-    }
-
-    /**
-     * To customize style of CanvasTable
-     * @param config config
-     */
-    public updateConfig(config: ICanvasTableConfig | undefined) {
         this.config = { ...defaultConfig, ...config };
     }
 
@@ -195,7 +181,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         if (!this.requestAnimationFrame) {
             return false;
         }
-
         return (this.drawconf !== undefined && this.drawconf.fulldraw);
     }
 
@@ -246,7 +231,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
 
     public setSort(sortCol?: Array<ICanvasTableColumnSort<T>>) {
         this.sortCol = sortCol;
-        this.customSort = undefined;
         this.askForReIndex();
     }
 
@@ -262,7 +246,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     }
 
     public updateColumns(col: Array<ICanvasTableColumnConf<T>>) {
-        this.orgColum = col;
+        this.orgColumn = col;
         this.column = [];
         let i;
         for (i = 0; i < col.length; i++) {
@@ -279,15 +263,12 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                     width: 50,
                 }, ...col[i],
             };
-
             if (this.column[index].field === "__idxnum__" || this.column[index].field === "__rownum__") {
                 this.column[index].allowEdit = false;
             }
         }
         this.needToCalc = true;
-
-        this.resize();
-        this.calcColum();
+        this.calcColumn();
     }
 
     public addEvent(EventName: "edit", event: EventManagerEdit): void;
@@ -309,15 +290,16 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             e.splice(index, 1);
         }
     }
+
     public setUpdateData(row: number, field: string, data: any) {
         const oldData = this.getUpdateDataOrData(row, field);
         if (!this.editData[row]) {
             this.editData[row] = {};
         }
-
         this.editData[row][field] = data;
         this.fireEdit(row, field, data, oldData);
     }
+
     public getUpdateData(row: number, field: string): {data: any} | undefined {
         const rowData = this.editData[row];
         if (!rowData) { return undefined; }
@@ -326,26 +308,20 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
         return undefined;
     }
+
     public getUpdateDataOrData(row: number, field: string): any {
         const rowData = this.editData[row];
         if (rowData && rowData.hasOwnProperty(field)) {
             return rowData[field];
         }
-
         return (this.data[row] as any)[field];
     }
-    public getEditData() {
-        return this.editData;
-    }
-    public clearEditData() {
-        this.editData = {};
-        this.askForReIndex();
-    }
-    public abstract resize(): void;
+
     protected logError(value: string, value2?: any, value3?: any): void {
         // tslint:disable-next-line: no-console
         console.log(value, value2, value3);
     }
+
     protected setOverRow(value: number | undefined) {
         if (value !== this.overRowValue) {
             const temp = this.overRowValue;
@@ -371,21 +347,13 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         if (this.r === r) { return; }
         this.r = r;
         this.needToCalc = true;
-        this.needToCalcFont = true;
     }
+
     protected abstract setCursor(cusor: string): void;
     protected abstract askForExtentedMouseMoveAndMaouseUp(): void;
     protected abstract askForNormalMouseMoveAndMaouseUp(): void;
     protected abstract scrollViewChange(): void;
-    protected getColumnByCanvasTableColumnConf(column: ICanvasTableColumnConf<T>): ICanvasTableColumn<T> | undefined {
-        let i;
-        for (i = 0; i < this.column.length; i++) {
-            if (this.column[i].orginalCol === column) {
-                return this.column[i];
-            }
-        }
-        return undefined;
-    }
+
     protected setIsFocus(isFocus: boolean) {
         if (this.isFocus !== isFocus) {
             this.isFocus = isFocus;
@@ -394,6 +362,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             }
         }
     }
+
     protected fireEdit(row: CanvasTableRowItem, col: string, newData: any, oldData: any) {
         let i;
         for (i = 0; i < this.eventEdit.length; i++) {
@@ -404,6 +373,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             }
         }
     }
+
     protected fireDblClick(row: CanvasTableRowItem, col: ICanvasTableColumn<T> | null) {
         let i;
         for (i = 0; i < this.eventDblClick.length; i++) {
@@ -414,6 +384,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             }
         }
     }
+
     protected fireClick(row: CanvasTableRowItem, col: ICanvasTableColumn<T> | null) {
         let i;
         for (i = 0; i < this.eventClick.length; i++) {
@@ -424,6 +395,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             }
         }
     }
+
     protected fireClickHeader(col: ICanvasTableColumn<T> | null) {
         let i;
         for (i = 0; i < this.eventClick.length; i++) {
@@ -431,19 +403,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                 this.eventClickHeader[i](this, col === null ? null : col.orginalCol);
             } catch {
                 this.logError("fireClickHeader");
-            }
-        }
-    }
-    protected fireReCalcForScrollView(width: number, height: number) {
-        const scrollView = this.scrollView;
-        if (scrollView) {
-            let i ;
-            for (i = 0; i < this.eventReCalcForScrollView.length; i++) {
-                try {
-                    this.eventReCalcForScrollView[i](this, width, height, scrollView);
-                } catch {
-                    this.logError("fireReCalcForScrollView");
-                }
             }
         }
     }
@@ -487,8 +446,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         if (this.scrollView && this.scrollView.onMouseDown(x, y)) {
             return;
         }
-        
-
         const col = this.findColByPos(x);
         if (y <= this.headerHeight) {
             const colSplit = this.findColSplit(x);
@@ -512,7 +469,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             }
         } 
         this.fireClick(row === null ? null : row.select, col);
-        
     }
 
     protected mouseMove(x: number, y: number) {
@@ -545,6 +501,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             this.setOverRow(undefined);
         }
     }
+
     protected mouseUp(x: number, y: number) {
         if (this.columnResize) {
             this.columnResize = undefined;
@@ -552,6 +509,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
         if (this.scrollView && this.scrollView.onMouseUp(x, y)) { return; }
     }
+
     protected mouseMoveExtended(x: number, y: number) {
         if (this.resizeColIfNeed(x)) {
             return;
@@ -559,6 +517,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
 
         if (this.scrollView && this.scrollView.onExtendedMouseMove(x, y)) { return; }
     }
+
     protected mouseUpExtended(x: number, y: number) {
         if (this.columnResize) {
             this.columnResize = undefined;
@@ -566,6 +525,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
         if (this.scrollView && this.scrollView.onExtendedMouseUp(x, y)) { return; }
     }
+
     protected mouseLeave() {
         this.setOverRow(undefined);
         if (this.columnResize === undefined) {
@@ -714,14 +674,13 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                 return this.column[i];
             }
         }
-
         return null;
     }
+
     protected findRowByPos(y: number): CanvasTableRowItemSelect {
         if (this.dataIndex === undefined || this.scrollView === undefined) { return null; }
         let pos = -this.scrollView.getPosY() / this.r + this.headerHeight;
         const cellHeight = this.cellHeight;
-
         const find = (items: ICanvasTableIndexsColMode):
                     ICanvasTableRowItemSelectColMode | null => {
             let i;
@@ -738,9 +697,9 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             }
             return null;
         };
-
         return find(this.dataIndex.index);
     }
+
     protected findTopPosByRow(rowValue: number | ICanvasTableRowItemSelectColMode): number | undefined {
         if (this.dataIndex === undefined || this.scrollView === undefined || rowValue === null) { return undefined; }
         let row: number | undefined;
@@ -772,22 +731,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
 
         return find(this.dataIndex.index);
     }
-    protected reCalcIndexIfNeed(field: string) {
-        let i;
-        if (this.customSort) {
-            this.calcIndex();
-            return;
-        }
-
-        if (this.sortCol) {
-            for (i = 0; i < this.sortCol.length; i++) {
-                if (this.sortCol[i].col.field === field) {
-                    this.calcIndex();
-                    return;
-                }
-            }
-        }
-    }
 
     protected calcIndex() {
         if (this.data === undefined) {
@@ -800,98 +743,85 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             index[index.length] = i;
         }
         
-        if (this.customSort) {
-            const customSort = this.customSort;
-            index.sort((a: number , b: number) => {
-                return customSort(this.data, this.data[a], this.data[b], a, b);
-            });
-        } else {
-            const sortCol = this.sortCol;
-            if (sortCol && sortCol.length) {
-                index.sort((a: number, b: number) => {
-                    let sortColIndex;
-                    for (sortColIndex = 0; sortColIndex < sortCol.length; sortColIndex++) {
-                        let d;
-                        const col = sortCol[sortColIndex];
-                        switch (col.col.field) {
-                            case "__rownum__":
-                                d = a - b;
-                                if (d !== 0) { return d * col.sort; }
-                                break;
-                            default:
-                                const da = this.getUpdateDataOrData(a, col.col.field);
-                                const db = this.getUpdateDataOrData(b, col.col.field);
-                                if (da === undefined || da === null) {
-                                    if (db === undefined || db === null) {
+        const sortCol = this.sortCol;
+        if (sortCol && sortCol.length) {
+            index.sort((a: number, b: number) => {
+                let sortColIndex;
+                for (sortColIndex = 0; sortColIndex < sortCol.length; sortColIndex++) {
+                    let d;
+                    const col = sortCol[sortColIndex];
+                    switch (col.col.field) {
+                        case "__rownum__":
+                            d = a - b;
+                            if (d !== 0) { return d * col.sort; }
+                            break;
+                        default:
+                            const da = this.getUpdateDataOrData(a, col.col.field);
+                            const db = this.getUpdateDataOrData(b, col.col.field);
+                            if (da === undefined || da === null) {
+                                if (db === undefined || db === null) {
+                                    continue;
+                                }
+                                return col.sort;
+                            }
+                            if (db === undefined || db === null) {
+                                return -1 * col.sort;
+                            }
+                            if (typeof da === "string" && typeof db === "string") {
+                                if (da === "") {
+                                    if (db === "") {
                                         continue;
                                     }
                                     return col.sort;
                                 }
-                                if (db === undefined || db === null) {
-                                    return -1 * col.sort;
-                                }
-                                if (typeof da === "string" && typeof db === "string") {
-                                    if (da === "") {
-                                        if (db === "") {
-                                            continue;
-                                        }
-                                        return col.sort;
-                                    }
 
-                                    if (db === "") {
-                                        return -1 * col.sort;
-                                    }
-                                    d = da.localeCompare(db);
-                                    if (d !== 0) { return d * col.sort; }
-                                    continue;
-                                }
-                                if (da > db) {
-                                    return col.sort;
-                                }
-                                if (da < db) {
+                                if (db === "") {
                                     return -1 * col.sort;
                                 }
-                        }
+                                d = da.localeCompare(db);
+                                if (d !== 0) { return d * col.sort; }
+                                continue;
+                            }
+                            if (da > db) {
+                                return col.sort;
+                            }
+                            if (da < db) {
+                                return -1 * col.sort;
+                            }
                     }
-                    return 0;
-                });
-            }
+                }
+                return 0;
+            });
         }
+
         this.dataIndex =  {
             index: { list: index }
-        };  
-        this.reCalcForScrollView();
+        };
     }
-    protected reCalcForScrollView() {
-        if (this.dataIndex === undefined) {return; }
-        let w: number | undefined = 1;
 
+    protected reCalcForScrollView() {
+        if (this.dataIndex === undefined) { return; }
+        let w: number | undefined = 1;
         if (this.column) {
-            let i;
-            for (i = 0; i < this.column.length; i++) {
-                w += this.column[i].width * this.r + 0;
+            for (let i = 0; i < this.column.length; i++) {
+                w += this.column[i].width;
             }
         } else {
             w = undefined;
         }
-
-        let h = 0;
         const cellHeight = this.cellHeight;
-        const calc = ( index: CanvasTableIndexs ) => {
-            h += cellHeight * index.list.length;
-        };
-
-        calc(this.dataIndex.index);
+        let h = cellHeight * this.dataIndex.index.list.length;
         if (this.scrollView && w !== undefined) {
-            this.scrollView.setSize(this.r, this.canvasWidth, this.canvasHeight, w, h * this.r);
-            this.fireReCalcForScrollView(w / this.r, h + this.headerHeight);
+            this.scrollView.setSize(this.r, this.canvasWidth, this.canvasHeight, w * this.r, h * this.r);
         }
     }
+
     protected setCanvasSize(width: number, height: number): void {
         this.canvasWidth = width;
         this.canvasHeight = height;
         this.reCalcForScrollView();
     }
+
     protected doReize(width: number, height: number) {
         this.setCanvasSize(width * this.r, height * this.r);
     }
@@ -902,16 +832,15 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
 
         if (this.needToCalc) {
-            this.calcColum();
+            this.calcColumn();
         }
 
         this.context.font = this.config.fontStyle + " " + this.config.fontSize * this.r + "px " + this.config.font;
         const posX = this.scrollView.getPosX();
 
-        if (this.needToCalcFont) {
-            this.minFontWidth = this.context.measureText("i").width;
-            this.maxFontWidth = this.context.measureText("Æ").width;
-        }
+        this.minFontWidth = this.context.measureText("i").width;
+        this.maxFontWidth = this.context.measureText("Æ").width;
+        
         if (this.drawconf !== undefined && this.drawconf.fulldraw) {
             this.drawconf = undefined;
         }
@@ -924,7 +853,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             this.askForReDraw();
         }
 
-        const headderHeight = this.headerHeight * this.r;
+        const headerHeight = this.headerHeight * this.r;
         const offsetLeft = 5 * this.r;
         if (drawConf === undefined) {
             this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
@@ -942,17 +871,15 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         let maxPos: number;
 
         maxPos = this.canvasHeight + this.cellHeight + 5 * this.r;
-        i = Math.floor(this.scrollView.getPosY() / (height));
+        i = Math.floor(this.scrollView.getPosY() / height);
         pos = (-this.scrollView.getPosY() + (i + 1) * height);
         pos += 14 * this.r;
         while (pos < maxPos) {
-            if (i < index.list.length) {
-                this.drawRowItem(this.context, index.list[i], i, pos, posX, height,
-                                    offsetLeft, colStart, colEnd, drawConf);
-            } else {
+            if(i >= index.list.length) {
                 break;
             }
-
+            this.drawRowItem(this.context, index.list[i], i, pos, posX, height,
+                                offsetLeft, colStart, colEnd, drawConf);
             pos += height;
             i++;
         }
@@ -960,32 +887,32 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         this.context.beginPath();
         const end = pos - height + 4 * this.r;
         const firstLine = -this.scrollView.getPosX() + this.column[colStart].leftPos;
-        this.context.moveTo(firstLine, headderHeight);
+        this.context.moveTo(firstLine, headerHeight);
         this.context.lineTo(firstLine, end);
         for (let col = colStart; col < colEnd; col++) {
             const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
-            this.context.moveTo(rightPos, headderHeight);
+            this.context.moveTo(rightPos, headerHeight);
             this.context.lineTo(rightPos, end);
         }
         this.context.stroke();
                 
-        // Headder
+        // Header
         pos = 14 * this.r;
         this.context.font = this.config.headerFontStyle + " " +
             (this.config.headerFontSize * this.r) + "px " + this.config.headerFont;
         this.context.fillStyle = this.config.headerFontColor;
-        this.context.clearRect(0, 0, this.canvasWidth, headderHeight);
+        this.context.clearRect(0, 0, this.canvasWidth, headerHeight);
         this.context.beginPath();
         this.context.strokeStyle = this.config.lineColor;
 
         const leftPos = -this.scrollView.getPosX() + this.column[colStart].leftPos;
         this.context.moveTo(leftPos, 0);
-        this.context.lineTo(leftPos, headderHeight);
+        this.context.lineTo(leftPos, headerHeight);
 
         for (let col = colStart; col < colEnd; col++) {
             const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
             this.context.moveTo(rightPos, 0);
-            this.context.lineTo(rightPos, headderHeight);
+            this.context.lineTo(rightPos, headerHeight);
         }
         this.context.stroke();
 
@@ -1061,7 +988,8 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         this.context.stroke();
         this.scrollView.draw();
     }
-    private calcColum() {
+
+    private calcColumn() {
         this.needToCalc = false;
         let leftPos = 1;
         let i;
@@ -1070,14 +998,15 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             leftPos += this.column[i].width * this.r;
             this.column[i].rightPos = leftPos;
         }
-
         this.reCalcForScrollView();
     }
+
     private updateCursor(cursor: string = ""): void {
         if (this.lastCursor === cursor) { return; }
         this.lastCursor = cursor;
         this.setCursor(cursor);
     }
+
     private getEvent(eventName: string): any[] {
         switch (eventName) {
             case "click":
@@ -1103,11 +1032,10 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         col.width += d;
         this.columnResize.x = x;
         col.orginalCol.width = col.width;
-        this.calcColum();
+        this.calcColumn();
         this.askForReDraw();
         return true;
     }
-
 
     private getDrawData(colItem: ICanvasTableColumn<T>, rowId: number, indexId: number): string {
         let data: string;
@@ -1163,7 +1091,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                 context.rect(left, top, width, h);
                 context.clip();
                 try {
-                    colItem.renderer(this, context, indexId, this.orgColum[col],
+                    colItem.renderer(this, context, indexId, this.orgColumn[col],
                         left, top, left + width, top + h, width, h, this.r,
                         data, this.data[indexId], this.data);
                 } catch (e) {
@@ -1228,7 +1156,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                 context.fillStyle = customStyle.backgroundColor;
             } else {
                 if (isOver) {
-                    context.fillStyle = this.config.howerBackgroundColor;
+                    context.fillStyle = this.config.hoverBackgroundColor;
                 } else {
                     context.fillStyle = isSepra ?  this.config.sepraBackgroundColor : this.config.backgroundColor ;
                 }

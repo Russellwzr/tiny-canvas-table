@@ -78,6 +78,7 @@ export class ScrollView {
     public getPosY(): number {
         return this.posYvalue;
     }
+
     public setPosY(value: number) {
         if (!this.hasScrollBarY) {
             value = 0;
@@ -101,6 +102,7 @@ export class ScrollView {
     public getPosX(): number {
         return this.posXvalue;
     }
+
     public setPosX(value: number) {
         if (!this.hasScrollBarX) {
             value = 0;
@@ -108,7 +110,7 @@ export class ScrollView {
 
         if (value <= 0) {
             value = 0;
-        } else  {
+        } else {
             if (value > this.scrollBarPosMaxX) {
                 value = this.scrollBarPosMaxX;
             }
@@ -249,22 +251,12 @@ export class ScrollView {
             (this.width / (this.canvasWidth - this.scrollbarSize * this.r) > 1)) {
             // has X and Y
             this.pageY = this.height / (this.canvasHeight - (18 + this.scrollbarSize) * this.r);
-            if (this.pageY < 1) {
-                this.hasScrollBarY = false;
-                this.scrollBarPosMaxY = 0;
-            } else {
-                this.hasScrollBarY = true;
-                this.scrollBarPosMaxY  = this.height - (this.canvasHeight - (18 + this.scrollbarSize) * this.r);
-            }
-
+            this.hasScrollBarY = true;
+            this.scrollBarPosMaxY  = this.height - (this.canvasHeight - (18 + this.scrollbarSize) * this.r);
+            
             this.pageX = this.width / (this.canvasWidth - this.scrollbarSize * this.r);
-            if (this.pageX < 1) {
-                this.hasScrollBarX = false;
-                this.scrollBarPosMaxX = 0;
-            } else {
-                this.hasScrollBarX = true;
-                this.scrollBarPosMaxX  = this.width - (this.canvasWidth - this.scrollbarSize * this.r);
-            }
+            this.hasScrollBarX = true;
+            this.scrollBarPosMaxX  = this.width - (this.canvasWidth - this.scrollbarSize * this.r);
         } else {
             // has x or Y
             this.pageY = this.height / (this.canvasHeight - 18 * this.r);
@@ -312,6 +304,7 @@ export class ScrollView {
         }
         return false;
     }
+    
     public OnKeydown(keyCode: number): boolean {
         switch (keyCode) {
             case 33: // pagedown

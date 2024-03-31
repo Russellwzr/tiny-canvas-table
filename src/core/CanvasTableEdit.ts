@@ -1,19 +1,14 @@
 import { ICanvasTableColumn } from "./types/CanvasTableColum";
 
-export enum CanvasTableEditAction {
-    moveNext,
-    movePrev,
-}
-
 export class CanvasTableEdit<T = any> {
     private hasBeenRemoved: boolean = false;
     private readonly column: ICanvasTableColumn<T>;
     private readonly row: number;
     private readonly inputeElement: HTMLInputElement | HTMLSelectElement;
-    private onRemove?: (cancel: boolean, newData: string, action: CanvasTableEditAction | undefined) => void;
+    private onRemove?: (cancel: boolean, newData: string) => void;
 
     constructor(col: ICanvasTableColumn<T>, row: number, data: string, cellHeight: number,
-                onRemve: (cancel: boolean, newData: string, action: CanvasTableEditAction | undefined) => void) {
+                onRemve: (cancel: boolean, newData: string) => void) {
         this.column = col;
         this.row = row;
         this.onRemove = onRemve;
@@ -22,57 +17,32 @@ export class CanvasTableEdit<T = any> {
         this.inputeElement.value = data;
         this.inputeElement.style.position = "absolute";
         this.inputeElement.style.border = "none";
-
-        if (this.inputeElement instanceof HTMLInputElement) {
-            this.inputeElement.style.width = (col.width - 7) + "px";
-        } else  {
-            this.inputeElement.style.width = col.width + "px";
-        }
+        this.inputeElement.style.width = (col.width - 7) + "px";
         this.inputeElement.style.height = cellHeight + "px";
         this.inputeElement.style.padding = "0px 3px";
-
         document.body.appendChild(this.inputeElement);
 
         this.inputeElement.focus({preventScroll: true});
-
         this.inputeElement.addEventListener("blur", this.onBlur);
-        if (this.inputeElement instanceof  HTMLSelectElement) {
-            this.inputeElement.addEventListener("keydown", this.onKeydown);
-        } else {
-            this.inputeElement.addEventListener("keydown", this.onKeydown);
-        }
-
+        this.inputeElement.addEventListener("keydown", this.onKeydown);
     }
+
     public getRow() { return this.row; }
+
     public getColumn() {return this.column; }
 
-    public updateEditLocation(top: number, left: number, width: number, height: number,
-                              clipTop?: number, clipRight?: number, clipBottom?: number, clipLeft?: number) {
+    public updateEditLocation(top: number, left: number, width: number, height: number) {
         this.inputeElement.style.top = top + "px";
         this.inputeElement.style.left = left + "px";
-        if (this.inputeElement instanceof HTMLInputElement) {
-            this.inputeElement.style.width = (width - 7) + "px";
-        } else {
-            this.inputeElement.style.width = width + "px";
-        }
+        this.inputeElement.style.width = (width - 7) + "px";
         this.inputeElement.style.height = height + "px";
-        if (clipTop === undefined && clipRight === undefined && clipBottom === undefined && clipLeft === undefined) {
-            this.inputeElement.style.clip = "";
-        }  else {
-            this.inputeElement.style.clip = "rect(" +
-                (clipTop === undefined    ? "auto," : clipTop + "px," ) +
-                (clipRight === undefined  ? "auto," : clipRight + "px," ) +
-                (clipBottom === undefined ? "auto," : clipBottom + "px," ) +
-                (clipLeft === undefined   ? "auto"  : clipLeft + "px" ) +
-                ")";
-        }
     }
 
-    public doRemove(cancel: boolean, action: CanvasTableEditAction | undefined) {
+    public doRemove(cancel: boolean) {
         let error;
         try {
             if (this.onRemove) {
-                this.onRemove(cancel, this.inputeElement.value, action);
+                this.onRemove(cancel, this.inputeElement.value);
             }
         } catch (e) {
             error = e;
@@ -81,11 +51,8 @@ export class CanvasTableEdit<T = any> {
         this.onRemove = undefined;
 
         this.inputeElement.removeEventListener("blur", this.onBlur);
-        if (this.inputeElement instanceof  HTMLSelectElement) {
-            this.inputeElement.removeEventListener("keydown", this.onKeydown);
-        } else {
-            this.inputeElement.removeEventListener("keydown", this.onKeydown);
-        }
+        this.inputeElement.removeEventListener("keydown", this.onKeydown as any);
+
         if (!this.hasBeenRemoved) {
             document.body.removeChild(this.inputeElement);
             this.hasBeenRemoved = true;
@@ -97,7 +64,6 @@ export class CanvasTableEdit<T = any> {
 
     private onKeydown = (ev: KeyboardEvent) => {
         let cancel: boolean | undefined;
-        let action: CanvasTableEditAction | undefined;
         switch (ev.code) {
             case "Escape":
                 cancel = true;
@@ -106,26 +72,19 @@ export class CanvasTableEdit<T = any> {
             case "Enter":
                 cancel = false;
                 break;
-            case "Tab":
-                cancel = false;
-                action = ev.shiftKey ? CanvasTableEditAction.movePrev : CanvasTableEditAction.moveNext;
-                ev.preventDefault();
-                break;
         }
-
         if (cancel !== undefined) {
-            const cancelArg = cancel;
             setTimeout(() => {
-                this.doRemove(cancelArg, action);
-            }, 1);
+                this.doRemove(cancel as boolean);
+            }, 0);
         }
     }
 
     private onBlur = () => {
         if (!this.hasBeenRemoved) {
             setTimeout(() => {
-                this.doRemove(false, undefined);
-            }, 1);
+                this.doRemove(false);
+            }, 0);
         }
     }
 }

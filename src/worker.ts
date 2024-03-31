@@ -44,13 +44,14 @@ const col: ICanvasTableColumnConf[] = [
         width: 200,
         align: Align.left
     },
+    /*
     {
         header: "Render",
         field: "__rownum__",
         width: 200,
         renderer: customDraw,
         visible: true
-    },
+    },*/
 ];
 
 const offscreenCanvasTableWorker = new OffscreenCanvasTableWorker(1, col);

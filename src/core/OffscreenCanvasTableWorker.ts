@@ -1,7 +1,6 @@
 import { ICanvasContext2D } from "./types/CanvasContext2D";
-import { Align, CustomSort, ICanvasTableColumn, ICanvasTableColumnConf,
+import { Align, ICanvasTableColumn, ICanvasTableColumnConf,
      ICanvasTableColumnSort, Sort } from "./types/CanvasTableColum";
-import { CanvasTableEditAction } from "./CanvasTableEdit";
 import { CanvasTableRowItem } from "./types/CustomCanvasIndex";
 import { CustomCanvasTable, ICanvasTableConfig } from "./CustomCanvasTable";
 import { OffscreenCanvasMesssageFromWorker, OffscreenCanvasMesssageToWorker, OffscreenCanvasMesssageType } from "./types/OffscreenCanvasTableMessage";
@@ -11,7 +10,7 @@ declare function postMessage(message: any): void;
 
 export { Align, Sort, CustomCanvasTable };
 export type {
-    ICanvasTableColumnConf, CanvasTableRowItem, ICanvasTableColumnSort, CustomSort, ICanvasContext2D
+    ICanvasTableColumnConf, CanvasTableRowItem, ICanvasTableColumnSort, ICanvasContext2D
 };
 
 export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
@@ -91,7 +90,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
                 this.keydown(data.keycode);
                 break;
             case OffscreenCanvasMesssageType.onEditRemoveUpdateForEdit:
-                this.onEditRemoveUpdateForEdit(data.action, data.cancel,
+                this.onEditRemoveUpdateForEdit(data.cancel,
                     data.col, data.newData, data.row);
                 break;
         }
@@ -172,7 +171,6 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
     }
     
     private onEditRemoveUpdateForEdit(
-          action: CanvasTableEditAction | undefined,
           cancel: boolean,
           col: ICanvasTableColumn<T> | undefined,
           newData: string,
@@ -185,25 +183,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
 
         if (String(this.getUpdateDataOrData(row, col.field)) !== String(newData)) {
             this.setUpdateData(row, col.field, newData);
-            this.reCalcIndexIfNeed(col.field);
-            this.askForReDraw();
-        }
-
-        if (action !== undefined) {
-            switch (action) {
-                case CanvasTableEditAction.moveNext:
-                    if (this.column.length > col.index + 1) {
-                        const column = this.column[col.index + 1];
-                        this.updateForEdit(column, row);
-                    }
-                    break;
-                case CanvasTableEditAction.movePrev:
-                        if (0 < col.index) {
-                            const column = this.column[col.index - 1];
-                            this.updateForEdit(column, row);
-                        }
-                        break;
-            }
+            this.askForReIndex();
         }
     }
 }

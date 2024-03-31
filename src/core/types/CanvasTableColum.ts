@@ -42,18 +42,6 @@ export interface ICanvasTableColumn<T> {
 }
 
 /**
- * function pointer to custom sort
- * @param data  data Same array that was sent to CanvasTable, this array is not modified
- * @param rowA  row A
- * @param rowB  row B
- * @returns
- *      if rowA > rowB then return 1
- *      if rowA < rowB then return -1
- *      if rowA == rowB then return 0
- */
-export type CustomSort<T = any> = (data: T[], rowA: T, rowB: T, a: number, b: number) => number;
-
-/**
  * CanvasTableRowColStyle interface is return in [[CustomRowColStyle]]
  */
 export interface ICanvasTableRowColStyle {
