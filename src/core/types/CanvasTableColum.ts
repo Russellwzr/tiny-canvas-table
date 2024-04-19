@@ -36,7 +36,6 @@ export interface ICanvasTableColumn<T> {
     index: number;
     leftPos: number;
     rightPos: number;
-    renderer?: RenderValue<T>;
     customData?: CustomData<T>;
     orginalCol: ICanvasTableColumnConf<T>;
 }
@@ -95,10 +94,6 @@ export interface ICanvasTableColumnConf<T = any> {
      * Visible of the column. default visible
      */
     visible?: boolean;
-    /**
-     * function pointer to render the data with canvas
-     */
-    renderer?: RenderValue<T>;
     /**
      * function pointer to render string.
      */

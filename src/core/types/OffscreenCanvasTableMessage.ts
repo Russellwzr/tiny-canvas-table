@@ -5,7 +5,7 @@ export enum OffscreenCanvasMesssageType {
     resize = 1,
     expendAll = 2, collapseAll = 3, setGroupBy = 4,
     scroll = 10, focus = 15,
-    mouseDown = 20, mouseMove = 21, mouseUp = 22, mouseLeave = 23, mouseMoveExtended = 24, mouseUpExtended = 25,
+    mouseDown = 20, mouseMove = 21, mouseUp = 22, mouseMoveExtended = 24, mouseUpExtended = 25,
     mouseDblClick = 26,
     keyDown = 40,
     askForExtentedMouseMoveAndMaouseUp = 100, askForNormalMouseMoveAndMaouseUp = 101, setCursor = 102,
@@ -58,9 +58,7 @@ interface IOffscreenCanvasMessageMouse extends IOffscreenCanvasMesssageParnet {
     y: number;
 }
 
-interface IOffscreenCanvasMessageMouseLeave extends IOffscreenCanvasMesssageParnet {
-    type: OffscreenCanvasMesssageType.mouseLeave;
-}
+
 interface IOffscreenCanvasMessageKeyDown extends IOffscreenCanvasMesssageParnet {
     type: OffscreenCanvasMesssageType.keyDown;
     keycode: number;
@@ -110,7 +108,6 @@ export type OffscreenCanvasMesssageToWorker<T = any> =
     | IOffscreenCanvasMessageFunctionsToWorker
     | IOffscreenCanvasMessageGroupBy
     | IOffscreenCanvasMessageMouse
-    | IOffscreenCanvasMessageMouseLeave
     | IOffscreenCanvasMessageKeyDown
     | IOffscreenCanvasMessageFocus
     | IOffscreenCanvasMessageOnEditRemoveForEdit<T>

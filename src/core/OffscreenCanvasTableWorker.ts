@@ -83,9 +83,6 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
             case OffscreenCanvasMesssageType.mouseUpExtended:
                 this.mouseUpExtended(data.x, data.y);
                 break;
-            case OffscreenCanvasMesssageType.mouseLeave:
-                this.mouseLeave();
-                break;
             case OffscreenCanvasMesssageType.keyDown:
                 this.keydown(data.keycode);
                 break;
@@ -96,9 +93,6 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
         }
     }
 
-    public resize() {
-        /** */
-    }
     protected drawCanvas(): void {
         if (this.context === undefined || this.dataIndex === undefined) {
             this.requestAnimationFrame = undefined;
@@ -154,7 +148,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
         this.canvas.height = height;
         super.setCanvasSize(width, height);
     }
-    protected setCursor(cursor: string): void {
+    protected setCursor(cursor: string = ""): void {
         const data: OffscreenCanvasMesssageFromWorker = { cursor, canvasTableId: this.id,
               type: OffscreenCanvasMesssageType.setCursor };
         postMessage(data);

@@ -2,20 +2,6 @@
 import { Align, OffscreenCanvasTableWorker, ICanvasTableColumnConf, CustomCanvasTable, ICanvasContext2D } from './core/OffscreenCanvasTableWorker';
 
 
-function customDraw(canvasTable: CustomCanvasTable, context: ICanvasContext2D, rowIndex: number, col: ICanvasTableColumnConf, left: number, top: number, right: number, bottom: number, width: number, height: number, r: number, dataValue: any, row: any, data: any): void {
-    context.fillStyle = "lightgreen";
-    context.fillRect(left, top, width, height);
-    context.strokeStyle = "red";
-    context.beginPath();
-    context.moveTo(left, top);
-    context.lineTo(right, bottom);
-
-    context.moveTo(left, bottom);
-    context.lineTo(right, top);
-
-    context.stroke();
-}
-
 const col: ICanvasTableColumnConf[] = [
     {
         header: "Id",
@@ -44,14 +30,6 @@ const col: ICanvasTableColumnConf[] = [
         width: 200,
         align: Align.left
     },
-    /*
-    {
-        header: "Render",
-        field: "__rownum__",
-        width: 200,
-        renderer: customDraw,
-        visible: true
-    },*/
 ];
 
 const offscreenCanvasTableWorker = new OffscreenCanvasTableWorker(1, col);

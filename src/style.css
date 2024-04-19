@@ -9,6 +9,3 @@
     border: 1px solid black;
     user-select: none;
 }
-.ToDoList {
-    list-style-type: decimal-leading-zero;
-}

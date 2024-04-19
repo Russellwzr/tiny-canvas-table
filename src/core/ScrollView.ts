@@ -345,38 +345,7 @@ export class ScrollView {
 
         this.fixPos();
     }
-    public onMouseLeave() {
-        let needToReDraw = false;
-        if (this.isOverScollThumbY && !this.scrollBarThumbDownY) {
-            this.isOverScollThumbY = false;
-            needToReDraw = true;
-        }
-        if (this.isOverScrollUpY) {
-            this.isOverScrollUpY = false;
-            needToReDraw = true;
-        }
-        if (this.isOverScrollDownY) {
-            this.isOverScrollDownY = false;
-            needToReDraw = true;
-        }
 
-        if (this.isOverScollThumbX && !this.scrollBarThumbDownX) {
-            this.isOverScollThumbX = false;
-            needToReDraw = true;
-        }
-        if (this.isOverScrollUpX) {
-            this.isOverScrollUpX = false;
-            needToReDraw = true;
-        }
-        if (this.isOverScrollDownX) {
-            this.isOverScrollDownX = false;
-            needToReDraw = true;
-        }
-
-        if (needToReDraw) {
-            this.drawMe();
-        }
-    }
     public onExtendedMouseUp(x: number, y: number): boolean {
         this.askForNormalMouseMoveAndMaouseUp.call(this.drawable);
 
