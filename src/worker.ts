@@ -1,13 +1,13 @@
 
-import { Align, OffscreenCanvasTableWorker, ICanvasTableColumnConf, CustomCanvasTable, ICanvasContext2D } from './core/OffscreenCanvasTableWorker';
+import { Align, OffscreenCanvasTableWorker, ICanvasTableColumnConf } from './core/OffscreenCanvasTableWorker';
 
 
 const col: ICanvasTableColumnConf[] = [
     {
-        header: "Id",
+        header: "ID",
         field: "__rownum__",
         width: 100,
-        align: Align.center
+        //align: Align.center
     },
     {
         header: "Country",
@@ -25,10 +25,9 @@ const col: ICanvasTableColumnConf[] = [
         width: 200
     },
     {
-        header: "geonameid",
+        header: "Geonameid",
         field: "geonameid",
-        width: 200,
-        align: Align.left
+        width: 200
     },
 ];
 

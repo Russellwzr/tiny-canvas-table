@@ -45,10 +45,14 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
                 this.setR(data.r);
                 const context =  this.canvas.getContext("2d") as ICanvasContext2D;
                 if (context === null) { return; }
-                this.scrollView = new ScrollView(context, this,
+                this.scrollView = new ScrollView(
+                    context, 
+                    this,
                     this.config ? this.config.scrollView : undefined,
-                    this.askForExtentedMouseMoveAndMaouseUp, this.askForNormalMouseMoveAndMaouseUp,
-                    this.scrollViewChange);
+                    this.askForExtentedMouseMoveAndMaouseUp, 
+                    this.askForNormalMouseMoveAndMaouseUp,
+                    this.scrollViewChange
+                );
 
                 this.context = context;
                 this.doReize(data.width, data.height);

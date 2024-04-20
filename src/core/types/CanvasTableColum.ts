@@ -11,7 +11,7 @@ export type RenderValue<T = any> = (
     width: number, height: number, r: number, dataValue: string, row: T, data: T[]) => void;
 
 export type CustomRowColStyle<T = any> = (data: T[], row: T, col: ICanvasTableColumnConf<T>,
-                                          isOver: boolean, isSepra: boolean, dataRowCol: string)
+                                          isSepra: boolean, dataRowCol: string)
                                  => ICanvasTableRowColStyle | undefined | null;
 
 export interface IUpdateRect {

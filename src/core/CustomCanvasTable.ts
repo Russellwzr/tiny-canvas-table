@@ -82,10 +82,6 @@ export interface ICanvasTableConfig {
      */
     selectLineColor: CanvasColor;
     /**
-     * Backgroud color when mouse is hover the row
-     */
-    hoverBackgroundColor: CanvasColor;
-    /**
      * Every secound row can have another backgound color sepra
      */
     sepraBackgroundColor: CanvasColor;
@@ -95,19 +91,18 @@ const defaultConfig: ICanvasTableConfig = {
     backgroundColor: "white",
     font: "arial",
     fontColor: "black",
-    fontSize: 14,
+    fontSize: 16,
     fontStyle: "",
-    headerBackgroundColor: "#add8e6",
+    headerBackgroundColor: "#ecf1f5",
     headerDrawSortArrow: true,
-    headerDrawSortArrowColor: "purple",
+    headerDrawSortArrowColor: "#5f6163",
     headerFont: "arial",
     headerFontColor: "black",
-    headerFontSize: 14,
+    headerFontSize: 16,
     headerFontStyle: "bold",
-    hoverBackgroundColor: "#DCDCDC",
-    lineColor: "black",
-    selectLineColor: "green",
-    sepraBackgroundColor: "#ECECEC",
+    lineColor: "#e1e4e8",
+    selectLineColor: "#1c1cfc",
+    sepraBackgroundColor: "#faf9fb",
 };
 
 export abstract class CustomCanvasTable<T = any> implements IDrawable {
@@ -120,8 +115,8 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
 
     protected scrollView?: ScrollView;
 
-    protected headerHeight = 18;
-    protected cellHeight = 20;
+    protected headerHeight = 36;
+    protected cellHeight = 36;
     protected dataIndex?: CanvasTableIndex = undefined;
     protected config: ICanvasTableConfig = defaultConfig;
     protected column: Array<ICanvasTableColumn<T>> = [];
@@ -138,7 +133,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     private maxFontWidth: number = 1;
     private customRowColStyle?: CustomRowColStyle<T>;
     private sortCol?: Array<ICanvasTableColumnSort<T>>;
-    private overRowValue?: number;
     private selectRowValue: CanvasTableRowItemSelect = null;
     private selectColValue?: ICanvasTableColumn<T>;
     private columnResize?: {x: number, col: ICanvasTableColumn<T>};
@@ -632,12 +626,10 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         let row: number | undefined;
         if (typeof rowValue === "number") {
             row = rowValue;
-        } else {
-            if (typeof rowValue.select === "number") {
-                row = rowValue.select;
-            } else {
-            }
-        }
+        } else if (typeof rowValue.select === "number") {
+            row = rowValue.select;
+        } 
+        
         let pos = this.headerHeight * this.r;
         const cellHeight = this.cellHeight * this.r;
 
@@ -738,7 +730,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
         const h = this.cellHeight * this.dataIndex.index.list.length;
         if (this.scrollView && w !== undefined) {
-            this.scrollView.setSize(this.r, this.canvasWidth, this.canvasHeight, w * this.r, h * this.r);
+            this.scrollView.setSize(this.r, this.canvasWidth, this.canvasHeight, this.headerHeight, w * this.r, h * this.r);
         }
     }
 
@@ -760,12 +752,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         if (this.needToCalc) {
             this.calcColumn();
         }
-
-        this.context.font = this.config.fontStyle + " " + this.config.fontSize * this.r + "px " + this.config.font;
-        const posX = this.scrollView.getPosX();
-
-        this.minFontWidth = this.context.measureText("i").width;
-        this.maxFontWidth = this.context.measureText("Æ").width;
         
         if (this.drawconf !== undefined && this.drawconf.fulldraw) {
             this.drawconf = undefined;
@@ -779,69 +765,56 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             this.askForReDraw();
         }
 
-        const headerHeight = this.headerHeight * this.r;
-        const offsetLeft = 5 * this.r;
         if (drawConf === undefined) {
             this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
         }
 
         this.context.fillStyle = this.config.fontColor;
         this.context.strokeStyle = this.config.lineColor;
+        this.context.font = this.config.fontStyle + " " + this.config.fontSize * this.r + "px " + this.config.font;
+        
+        this.minFontWidth = this.context.measureText("i").width;
+        this.maxFontWidth = this.context.measureText("Æ").width;
+
+        const posX = this.scrollView.getPosX();
+        const headerHeight = this.headerHeight * this.r;
+        const offsetLeft = 14 * this.r; // font offset
         const colStart = 0;
         const colEnd = this.column.length;
-
         const height = this.cellHeight * this.r;
         const index = this.dataIndex.index;
-        let pos: number;
-        let i: number;
-        let maxPos: number;
+        const maxPos = this.canvasHeight + height + 4 * this.r;
 
-        maxPos = this.canvasHeight + this.cellHeight + 5 * this.r;
-        i = Math.floor(this.scrollView.getPosY() / height);
-        pos = (-this.scrollView.getPosY() + (i + 1) * height);
-        pos += 14 * this.r;
-        while (pos < maxPos) {
-            if(i >= index.list.length) {
-                break;
-            }
+        // draw data-row item
+        let i = Math.max(0, Math.floor((this.scrollView.getPosY() - headerHeight) / height)); // row-index
+        let pos = -this.scrollView.getPosY() + headerHeight + (i + 1) * height; // y-axis coordinate 
+        while (pos < maxPos && i < index.list.length) {
             this.drawRowItem(this.context, index.list[i], i, pos, posX, height,
                                 offsetLeft, colStart, colEnd, drawConf);
             pos += height;
             i++;
         }
 
+        // draw data-row vertical line
         this.context.beginPath();
-        const end = pos - height + 4 * this.r;
-        const firstLine = -this.scrollView.getPosX() + this.column[colStart].leftPos;
+        const end = pos - height;
+        const firstLine = -posX + this.column[colStart].leftPos;
         this.context.moveTo(firstLine, headerHeight);
         this.context.lineTo(firstLine, end);
         for (let col = colStart; col < colEnd; col++) {
-            const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
+            const rightPos = -posX + this.column[col].rightPos;
             this.context.moveTo(rightPos, headerHeight);
             this.context.lineTo(rightPos, end);
         }
         this.context.stroke();
                 
-        // Header
-        pos = 14 * this.r;
+        // draw table header
         this.context.font = this.config.headerFontStyle + " " +
             (this.config.headerFontSize * this.r) + "px " + this.config.headerFont;
         this.context.fillStyle = this.config.headerFontColor;
         this.context.clearRect(0, 0, this.canvasWidth, headerHeight);
-        this.context.beginPath();
-        this.context.strokeStyle = this.config.lineColor;
-
-        const leftPos = -this.scrollView.getPosX() + this.column[colStart].leftPos;
-        this.context.moveTo(leftPos, 0);
-        this.context.lineTo(leftPos, headerHeight);
-
-        for (let col = colStart; col < colEnd; col++) {
-            const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
-            this.context.moveTo(rightPos, 0);
-            this.context.lineTo(rightPos, headerHeight);
-        }
-        this.context.stroke();
-
+        
+        // draw header row item
         this.context.textAlign = "left";
         for (let col = colStart; col < colEnd; col++) {
             let needClip: boolean;
@@ -855,28 +828,26 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             } else {
                 needClip = colWidth < this.context.measureText(data).width;
             }
-
             this.context.fillStyle = this.config.headerBackgroundColor;
+            const rectX = -posX + colItem.leftPos;
             if (needClip) {
-                this.context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
-                    colItem.width * this.r - 1 * 2, height - 3);
+                this.context.fillRect(rectX, 0, colItem.width * this.r, headerHeight);
                 this.context.save();
                 this.context.beginPath();
-                this.context.rect(-this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos - height,
-                    colItem.width * this.r - offsetLeft * 2, height);
+                this.context.rect(rectX + offsetLeft, 0, colItem.width * this.r - offsetLeft * 2, headerHeight);
                 this.context.clip();
                 this.context.fillStyle = this.config.headerFontColor;
-                this.context.fillText(data, -this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos);
+                this.context.fillText(data, rectX + offsetLeft, headerHeight - 14 * this.r);
                 this.context.restore();
             } else {
-                this.context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
-                    colItem.width * this.r - 1 * 2, height - 3);
+                this.context.fillRect(rectX, 0, colItem.width * this.r, headerHeight);
                 this.context.fillStyle = this.config.headerFontColor;
-                this.context.fillText(data,  -this.scrollView.getPosX() + colItem.leftPos + offsetLeft, pos);
+                this.context.fillText(data,  rectX + offsetLeft, headerHeight - 14 * this.r);
             }
 
+            // draw sort arrow
             if (this.config.headerDrawSortArrow) {
-                let sort: Sort|undefined;
+                let sort: Sort | undefined;
                 if (this.sortCol) {
                     let sortIndex;
                     for (sortIndex = 0; sortIndex < this.sortCol.length; sortIndex++) {
@@ -886,32 +857,40 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                         }
                     }
                 }
-                if (sort) {
+                if (sort !== undefined) {
                     this.context.fillStyle = this.config.headerDrawSortArrowColor;
-                    const startX =  -this.scrollView.getPosX() + this.column[col].rightPos;
+                    const startX = -posX + this.column[col].rightPos;
                     if (sort === Sort.ascending) {
                         this.context.beginPath();
-                        this.context.moveTo(startX - 12 * this.r, 5 * this.r);
-                        this.context.lineTo(startX - 4 * this.r, 5 * this.r);
-                        this.context.lineTo(startX - 8 * this.r, 14 * this.r);
+                        this.context.moveTo(startX - 20 * this.r, 14 * this.r);
+                        this.context.lineTo(startX - 10 * this.r, 14 * this.r);
+                        this.context.lineTo(startX - 15 * this.r, 20 * this.r);
                         this.context.fill();
                     } else {
                         this.context.beginPath();
-                        this.context.moveTo(startX - 8 * this.r, 5 * this.r);
-                        this.context.lineTo(startX - 12 * this.r, 14 * this.r);
-                        this.context.lineTo(startX - 4 * this.r, 14 * this.r);
+                        this.context.moveTo(startX - 15 * this.r, 14 * this.r);
+                        this.context.lineTo(startX - 20 * this.r, 20 * this.r);
+                        this.context.lineTo(startX - 10 * this.r, 20 * this.r);
                         this.context.fill();
                     }
                 }
             }
         }
 
+        // draw header vertical line
         this.context.beginPath();
-        this.context.moveTo(0, pos + 4 * this.r);
-        this.context.lineTo(
-            Math.min(-this.scrollView.getPosX() + this.column[this.column.length - 1].rightPos, this.canvasWidth),
-            pos + 4 * this.r);
+        this.context.strokeStyle = this.config.lineColor;
+        const leftPos = -this.scrollView.getPosX() + this.column[colStart].leftPos;
+        this.context.moveTo(leftPos, 0);
+        this.context.lineTo(leftPos, headerHeight);
+        for (let col = colStart; col < colEnd; col++) {
+            const rightPos = -this.scrollView.getPosX() + this.column[col].rightPos;
+            this.context.moveTo(rightPos, 0);
+            this.context.lineTo(rightPos, headerHeight);
+        }
         this.context.stroke();
+
+        // draw scroll bar
         this.scrollView.draw();
     }
 
@@ -982,19 +961,16 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                         drawConf: IDrawConfig | undefined): void {
         if (drawConf !== undefined && drawConf.drawOnly !== undefined) {
             let found = false;
-            let index;
-            for (index = 0; index < drawConf.drawOnly.length; index++) {
+            for (let index = 0; index < drawConf.drawOnly.length; index++) {
                 if (drawConf.drawOnly[index] === indexId) {
                     found = true;
                     break;
                 }
             }
-
             if (!found) {
                 return;
             }
         }
-        const isOver = this.overRowValue === indexId;
         const isSepra =  i % 2 === 0;
 
         for (let col = colStart; col < colEnd; col++) {
@@ -1005,7 +981,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             if (this.customRowColStyle) {
                 try {
                     customStyle = this.customRowColStyle(
-                        this.data, this.data[indexId], colItem.orginalCol, isOver, isSepra, data);
+                        this.data, this.data[indexId], colItem.orginalCol, isSepra, data);
                 } catch {
                     this.logError("Canvas Table customRowColStyle");
                 }
@@ -1044,7 +1020,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                     }
                     break;
                 case Align.center:
-                    x = colItem.leftPos + colItem.width * this.r * 0.5 - offsetLeft;
+                    x = colItem.leftPos + offsetLeft + colWidth * 0.5;
                     if (context.textAlign !== "center") {
                         context.textAlign = "center";
                     }
@@ -1054,11 +1030,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             if (customStyle.backgroundColor !== undefined) {
                 context.fillStyle = customStyle.backgroundColor;
             } else {
-                if (isOver) {
-                    context.fillStyle = this.config.hoverBackgroundColor;
-                } else {
-                    context.fillStyle = isSepra ?  this.config.sepraBackgroundColor : this.config.backgroundColor ;
-                }
+                context.fillStyle = isSepra ? this.config.sepraBackgroundColor : this.config.backgroundColor;
             }
 
             let lastFont;
@@ -1073,39 +1045,36 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                     (customStyle.font === undefined ? this.config.font : customStyle.font);
             }
 
+            const rectX = -posX + colItem.leftPos;
+            const rectY = pos - height;
             if (needClip) {
-                context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
-                     colItem.width * this.r - 1 * 2, height - 3);
+                context.fillRect(rectX, rectY, colItem.width * this.r, height);
                 context.save();
                 context.beginPath();
-                context.rect(-posX + colItem.leftPos + offsetLeft, pos - height,
-                     colItem.width * this.r - offsetLeft * 2, height);
+                context.rect(rectX + offsetLeft, rectY, colItem.width * this.r - offsetLeft * 2, height);
                 context.clip();
-                context.fillStyle = customStyle.fontColor === undefined ?
-                                         this.config.fontColor : customStyle.fontColor;
-                context.fillText(data, -posX + x, pos);
+                context.fillStyle = customStyle.fontColor === undefined ? this.config.fontColor : customStyle.fontColor;
+                context.fillText(data, -posX + x, pos - 14 * this.r);
                 context.restore();
             } else {
-                context.fillRect(-posX + colItem.leftPos + 1, pos - height + 4 * this.r + 1,
-                                      colItem.width * this.r - 1 * 2, height - 3);
-                context.fillStyle = customStyle.fontColor === undefined ?
-                                         this.config.fontColor : customStyle.fontColor;
-                context.fillText(data, -posX + x, pos);
+                context.fillRect(rectX, rectY, colItem.width * this.r, height);
+                context.fillStyle = customStyle.fontColor === undefined ? this.config.fontColor : customStyle.fontColor;
+                context.fillText(data, -posX + x, pos - 14 * this.r);
             }
             if (lastFont) {
                 context.font = lastFont;
             }
         }
 
+        // draw horizontal line
         if (drawConf === undefined) {
             context.beginPath();
-            context.moveTo(0, pos + 4 * this.r);
-            context.lineTo(
-                                Math.min(-posX + this.column[this.column.length - 1].rightPos,
-                                this.canvasWidth), pos + 4 * this.r);
+            context.moveTo(0, pos);
+            context.lineTo(Math.min(-posX + this.column[this.column.length - 1].rightPos, this.canvasWidth), pos);
             context.stroke();
         }
 
+        // draw select box
         if (this.allowEdit && this.isFocus &&
              this.selectRowValue && this.selectRowValue.select === indexId &&
              this.selectColValue !== undefined) {
@@ -1116,9 +1085,12 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                     context.strokeStyle = this.config.selectLineColor;
                     context.lineWidth = 3;
                     context.beginPath();
-                    context.rect(-posX + this.selectColValue.leftPos + 2,
-                        pos + 4 * this.r - this.cellHeight * this.r + 2,
-                        this.selectColValue.width * this.r - 4, this.cellHeight * this.r - 4);
+                    context.rect(
+                        -posX + this.selectColValue.leftPos + 2 * this.r,
+                        pos - this.cellHeight * this.r + 2 * this.r,
+                        this.selectColValue.width * this.r - 4 * this.r, 
+                        this.cellHeight * this.r - 4 * this.r
+                    );
                     context.stroke();
                     context.strokeStyle = lastStroke;
                     context.lineWidth = lastLineWidth;
