@@ -99,7 +99,6 @@ export class OffscreenCanvasTable <T = any> {
         });
     }
 
-    
     private canvasMouseMove = (e: MouseEvent) => {
         e.preventDefault();
         this.postMessage({
@@ -110,7 +109,6 @@ export class OffscreenCanvasTable <T = any> {
         });
     }
     
-
     private canvasMouseUp = (e: MouseEvent) => {
         e.preventDefault();
         this.postMessage({
@@ -166,8 +164,8 @@ export class OffscreenCanvasTable <T = any> {
                 this.canvas.addEventListener("mouseup", this.canvasMouseUp);
                 break;
             case OffscreenCanvasMesssageType.setCursor:
-                    this.canvas.style.cursor = data.cursor;
-                    break;
+                this.canvas.style.cursor = data.cursor;
+                break;
             case OffscreenCanvasMesssageType.updateForEdit:
                 if (this.canvasTableEdit) {
                     this.canvasTableEdit.doRemove(true);
