@@ -2,16 +2,12 @@ import { CanvasColor, ICanvasContext2D } from "./types/CanvasContext2D";
 import { Align, CustomRowColStyle, 
          ICanvasTableColumn, ICanvasTableColumnConf, ICanvasTableColumnSort,
          ICanvasTableRowColStyle, IEditRowItem, IUpdateRect, Sort } from "./types/CanvasTableColum";
-import { CanvasTableIndex, CanvasTableRowItem,
+import { CanvasTableIndex, 
          CanvasTableRowItemSelect, 
-         ICanvasTableIndexsColMode, ICanvasTableRowItemSelectColMode } from "./types/CustomCanvasIndex";
+         ICanvasTableRowItemSelectColMode } from "./types/CustomCanvasIndex";
 import { IDrawable } from "./types/Drawable";
-import { EventManagerClick, EventManagerClickHeader, EventManagerEdit, EventManagerReCalcForScrollView } from "./types/EventManager";
 import { IScrollViewConfig, ScrollView } from "./ScrollView";
 
-export interface IDrawConfig {
-    drawOnly?: number[];
-}
 
 type FrameRequestCallback = (time: number) => void;
 declare function requestAnimationFrame(callback: FrameRequestCallback): number;
@@ -68,7 +64,6 @@ export interface ICanvasTableConfig {
      * Header: background color in header
      */
     headerBackgroundColor: CanvasColor;
-
     /**
      * Background color
      */
@@ -108,7 +103,6 @@ const defaultConfig: ICanvasTableConfig = {
 export abstract class CustomCanvasTable<T = any> implements IDrawable {
     protected context?: ICanvasContext2D;
     protected requestAnimationFrame?: number;
-    protected drawconf?: IDrawConfig & { fulldraw: boolean };
     protected r: number = 1;
     protected data: T[] = [];
     protected allowEdit: boolean = false;
@@ -120,11 +114,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     protected dataIndex?: CanvasTableIndex = undefined;
     protected config: ICanvasTableConfig = defaultConfig;
     protected column: Array<ICanvasTableColumn<T>> = [];
-    private eventDblClick: Array<EventManagerClick<T>> = [];
-    private eventClick: Array<EventManagerClick<T>> = [];
-    private eventClickHeader: Array<EventManagerClickHeader<T>> = [];
-    private eventReCalcForScrollView: EventManagerReCalcForScrollView[] = [];
-    private eventEdit: EventManagerEdit[] = [];
 
     private needToCalc: boolean = true;
 
@@ -152,21 +141,13 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         if (!this.requestAnimationFrame) {
             return false;
         }
-        return (this.drawconf !== undefined && this.drawconf.fulldraw);
+        return true;
     }
 
     /**
      * Let CanvasTable redraw
-     * @param config
      */
-    public askForReDraw(config?: IDrawConfig) {
-        if (config === undefined || (this.drawconf !== undefined && this.drawconf.fulldraw)) {
-            this.drawconf = { fulldraw: true };
-        } else {
-          if (this.drawconf === undefined) {
-            this.drawconf = {...config, ...{fulldraw : false}};
-          }
-        }
+    public askForReDraw() {
 
         if (this.requestAnimationFrame) {
             return;
@@ -188,16 +169,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
 
     public setAllowEdit(allowEdit: boolean) {
         this.allowEdit = allowEdit;
-    }
-
-    public setRowColStyle(style?: CustomRowColStyle<T> | null) {
-        if (style === null) {
-            style = undefined;
-        }
-        if (this.customRowColStyle !== style) {
-            this.customRowColStyle = style;
-            this.askForReDraw();
-        }
     }
 
     public setSort(sortCol?: Array<ICanvasTableColumnSort<T>>) {
@@ -241,42 +212,11 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         this.calcColumn();
     }
 
-    public addEvent(EventName: "edit", event: EventManagerEdit): void;
-    public addEvent(eventName: "clickHeader", event: EventManagerClickHeader<T>): void;
-    public addEvent(eventName: "click" | "dblClick", event: EventManagerClick<T>): void;
-    public addEvent(eventName: "reCalcForScrollView", event: EventManagerReCalcForScrollView): void;
-    public addEvent(eventName: string, event: any): void {
-        this.getEvent(eventName).push(event);
-    }
-
-    public removeEvent(EventName: "edit", event: EventManagerEdit): void;
-    public removeEvent(eventName: "clickHeader", event: EventManagerClickHeader<T>): void;
-    public removeEvent(eventName: "click" | "dblClick", event: EventManagerClick<T>): void;
-    public removeEvent(eventName: "reCalcForScrollView", event: EventManagerReCalcForScrollView): void;
-    public removeEvent(eventName: string, event: any): void {
-        const e = this.getEvent(eventName);
-        const index = e.indexOf(event);
-        if (index !== -1) {
-            e.splice(index, 1);
-        }
-    }
-
     public setUpdateData(row: number, field: string, data: any) {
-        const oldData = this.getUpdateDataOrData(row, field);
         if (!this.editData[row]) {
             this.editData[row] = {};
         }
         this.editData[row][field] = data;
-        this.fireEdit(row, field, data, oldData);
-    }
-
-    public getUpdateData(row: number, field: string): {data: any} | undefined {
-        const rowData = this.editData[row];
-        if (!rowData) { return undefined; }
-        if (rowData.hasOwnProperty(field)) {
-            return { data: rowData[field] };
-        }
-        return undefined;
     }
 
     public getUpdateDataOrData(row: number, field: string): any {
@@ -311,50 +251,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
     }
 
-    protected fireEdit(row: CanvasTableRowItem, col: string, newData: any, oldData: any) {
-        let i;
-        for (i = 0; i < this.eventEdit.length; i++) {
-            try {
-                this.eventEdit[i](this, row, col, newData, oldData);
-            } catch {
-                this.logError("eventEdit");
-            }
-        }
-    }
-
-    protected fireDblClick(row: CanvasTableRowItem, col: ICanvasTableColumn<T> | null) {
-        let i;
-        for (i = 0; i < this.eventDblClick.length; i++) {
-            try {
-                this.eventDblClick[i](this, row, col === null ? null : col.orginalCol);
-            } catch {
-                this.logError("fireDblClick");
-            }
-        }
-    }
-
-    protected fireClick(row: CanvasTableRowItem, col: ICanvasTableColumn<T> | null) {
-        let i;
-        for (i = 0; i < this.eventClick.length; i++) {
-            try {
-                this.eventClick[i](this, row, col === null ? null : col.orginalCol);
-            } catch {
-                this.logError("fireClick");
-            }
-        }
-    }
-
-    protected fireClickHeader(col: ICanvasTableColumn<T> | null) {
-        let i;
-        for (i = 0; i < this.eventClick.length; i++) {
-            try {
-                this.eventClickHeader[i](this, col === null ? null : col.orginalCol);
-            } catch {
-                this.logError("fireClickHeader");
-            }
-        }
-    }
-
     protected clickOnHeader(col: ICanvasTableColumn<T> | null) {
         if (col) {
             if (this.sortCol && this.sortCol.length === 1 &&
@@ -373,38 +269,35 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     }
 
     protected dblClick(x: number, y: number) {
-        const col = this.findColByPos(x);
         if (y <= this.headerHeight) {
             return;
         }
-        const row =  this.findRowByPos(y);
+        const col = this.findColByPos(x);
+        const row = this.findRowByPos(y);
         if (this.allowEdit && row && typeof row.select === "number" && col !== null) {
             if (!col.allowEdit) { return; }
-
             this.updateForEdit(col, row.select);
         }
-
-        this.fireDblClick(row === null ? null : row.select, col);
     }
 
     protected abstract updateForEdit(orginalCol: ICanvasTableColumn<T>, row: number): void;
 
     protected mouseDown(x: number, y: number): void {
-        if (this.dataIndex === undefined) { return; }
-        if (this.scrollView && this.scrollView.onMouseDown(x, y)) {
+        if (this.dataIndex === undefined || 
+            (this.scrollView && this.scrollView.onMouseDown(x, y))) { 
             return;
         }
         const col = this.findColByPos(x);
         if (y <= this.headerHeight) {
             const colSplit = this.findColSplit(x);
             if (colSplit !== null) {
+                // resize
                 this.columnResize = {x, col: this.column[colSplit]};
                 this.askForExtentedMouseMoveAndMaouseUp();
-                this.fireClickHeader(col);
-                return;
-            }
-            this.clickOnHeader(col);
-            this.fireClickHeader(col);
+            } else {
+                // sort
+                this.clickOnHeader(col);
+            }  
             return;
         }
 
@@ -416,12 +309,12 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
                 this.askForReDraw();
             }
         } 
-        this.fireClick(row === null ? null : row.select, col);
     }
 
-    
     protected mouseMove(x: number, y: number) {
-        if (!this.scrollView) { return; }
+        if (!this.scrollView) { 
+            return; 
+        }
         if (this.resizeColIfNeed(x)) {
             return;
         }
@@ -430,27 +323,26 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             return;
         }
         if (y < this.headerHeight && this.findColSplit(x) !== null) {
+            // add pointer style for col resize
             this.setCursor("col-resize");
         } else {
             this.setCursor();
         }
     }
     
-
     protected mouseUp(x: number, y: number) {
         if (this.columnResize) {
             this.columnResize = undefined;
             this.askForNormalMouseMoveAndMaouseUp();
         }
-        if (this.scrollView && this.scrollView.onMouseUp(x, y)) { return; }
+        this.scrollView?.onMouseUp(x, y);
     }
 
     protected mouseMoveExtended(x: number, y: number) {
         if (this.resizeColIfNeed(x)) {
             return;
         }
-
-        if (this.scrollView && this.scrollView.onExtendedMouseMove(x, y)) { return; }
+        this.scrollView?.onExtendedMouseMove(x, y);
     }
 
     protected mouseUpExtended(x: number, y: number) {
@@ -458,7 +350,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             this.columnResize = undefined;
             this.askForNormalMouseMoveAndMaouseUp();
         }
-        if (this.scrollView && this.scrollView.onExtendedMouseUp(x, y)) { return; }
+        this.scrollView?.onExtendedMouseUp(x, y);
     }
 
     protected keydown(keycode: number) {
@@ -600,25 +492,16 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
 
     protected findRowByPos(y: number): CanvasTableRowItemSelect {
         if (this.dataIndex === undefined || this.scrollView === undefined) { return null; }
-        let pos = -this.scrollView.getPosY() / this.r + this.headerHeight;
-        const cellHeight = this.cellHeight;
-        const find = (items: ICanvasTableIndexsColMode):
-                    ICanvasTableRowItemSelectColMode | null => {
-            let i;
-            const h = items.list.length * cellHeight;
-            if (y > pos + h) {
-                pos += h;
-            } else {
-                i = Math.trunc((-pos + y) / cellHeight);
-                pos += i * cellHeight;
-                if (i < items.list.length) {
-                    return { path: [items], select: items.list[i], index: i};
-                }
-                return null;
+        const items = this.dataIndex.index;
+        const pos = -this.scrollView.getPosY() / this.r + this.headerHeight;
+        const h = items.list.length * this.cellHeight;
+        if (y <= pos + h) {
+            const i = Math.trunc((-pos + y) / this.cellHeight);
+            if (i < items.list.length) {
+                return { path: [items], select: items.list[i], index: i};
             }
-            return null;
-        };
-        return find(this.dataIndex.index);
+        }
+        return null;
     }
 
     protected findTopPosByRow(rowValue: number | ICanvasTableRowItemSelectColMode): number | undefined {
@@ -628,27 +511,19 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             row = rowValue;
         } else if (typeof rowValue.select === "number") {
             row = rowValue.select;
-        } 
-        
+        } else {
+            return undefined;
+        }
         let pos = this.headerHeight * this.r;
         const cellHeight = this.cellHeight * this.r;
-
-        const find = (items: ICanvasTableIndexsColMode): number | undefined => {
-            let i;    
-            if (row === undefined) {
-                pos += cellHeight * items.list.length;
-            } else {
-                for (i = 0; i < items.list.length; i++) {
-                    if (items.list[i] === row) {
-                        return pos;
-                    }
-                    pos += cellHeight;
-                }
+        const items = this.dataIndex.index;
+        for (let i = 0; i < items.list.length; i++) {
+            if (items.list[i] === row) {
+                return pos;
             }
-            return undefined;
-        };
-
-        return find(this.dataIndex.index);
+            pos += cellHeight;
+        }
+        return undefined;
     }
 
     protected calcIndex() {
@@ -752,12 +627,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         if (this.needToCalc) {
             this.calcColumn();
         }
-        
-        if (this.drawconf !== undefined && this.drawconf.fulldraw) {
-            this.drawconf = undefined;
-        }
-        const drawConf = this.drawconf;
-        this.drawconf = undefined;
 
         this.requestAnimationFrame = undefined;
 
@@ -765,10 +634,8 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
             this.askForReDraw();
         }
 
-        if (drawConf === undefined) {
-            this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        }
 
+        this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
         this.context.fillStyle = this.config.fontColor;
         this.context.strokeStyle = this.config.lineColor;
         this.context.font = this.config.fontStyle + " " + this.config.fontSize * this.r + "px " + this.config.font;
@@ -790,7 +657,7 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         let pos = -this.scrollView.getPosY() + headerHeight + (i + 1) * height; // y-axis coordinate 
         while (pos < maxPos && i < index.list.length) {
             this.drawRowItem(this.context, index.list[i], i, pos, posX, height,
-                                offsetLeft, colStart, colEnd, drawConf);
+                                offsetLeft, colStart, colEnd);
             pos += height;
             i++;
         }
@@ -906,23 +773,6 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         this.reCalcForScrollView();
     }
 
-    private getEvent(eventName: string): any[] {
-        switch (eventName) {
-            case "click":
-                return this.eventClick;
-            case "dblClick":
-                return this.eventDblClick;
-            case "clickHeader":
-                return this.eventClickHeader;
-            case "reCalcForScrollView":
-                return this.eventReCalcForScrollView;
-            case "edit":
-                return this.eventEdit;
-            default:
-                throw new Error("unknown;");
-        }
-    }
-
     private resizeColIfNeed(x: number): boolean {
         if (this.columnResize === undefined) { return false; }
         const d = x - this.columnResize.x;
@@ -957,20 +807,8 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
     }
 
     private drawRowItem(context: ICanvasContext2D, indexId: number, i: number, pos: number, posX: number,
-                        height: number, offsetLeft: number, colStart: number, colEnd: number,
-                        drawConf: IDrawConfig | undefined): void {
-        if (drawConf !== undefined && drawConf.drawOnly !== undefined) {
-            let found = false;
-            for (let index = 0; index < drawConf.drawOnly.length; index++) {
-                if (drawConf.drawOnly[index] === indexId) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                return;
-            }
-        }
+                        height: number, offsetLeft: number, colStart: number, colEnd: number): void {
+
         const isSepra =  i % 2 === 0;
 
         for (let col = colStart; col < colEnd; col++) {
@@ -1067,12 +905,10 @@ export abstract class CustomCanvasTable<T = any> implements IDrawable {
         }
 
         // draw horizontal line
-        if (drawConf === undefined) {
-            context.beginPath();
-            context.moveTo(0, pos);
-            context.lineTo(Math.min(-posX + this.column[this.column.length - 1].rightPos, this.canvasWidth), pos);
-            context.stroke();
-        }
+        context.beginPath();
+        context.moveTo(0, pos);
+        context.lineTo(Math.min(-posX + this.column[this.column.length - 1].rightPos, this.canvasWidth), pos);
+        context.stroke();
 
         // draw select box
         if (this.allowEdit && this.isFocus &&

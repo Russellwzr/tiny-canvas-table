@@ -3,13 +3,12 @@ import { ICanvasTableColumn, IUpdateRect } from "./CanvasTableColum";
 export enum OffscreenCanvasMesssageType {
     create = 0,
     resize = 1,
-    expendAll = 2, collapseAll = 3, setGroupBy = 4,
     scroll = 10, focus = 15,
     mouseDown = 20, mouseMove = 21, mouseUp = 22, mouseMoveExtended = 24, mouseUpExtended = 25,
     mouseDblClick = 26,
     keyDown = 40,
     askForExtentedMouseMoveAndMaouseUp = 100, askForNormalMouseMoveAndMaouseUp = 101, setCursor = 102,
-    updateForEdit = 103, removeUpdateForEdit = 104, locationForEdit = 105, onEditRemoveUpdateForEdit = 106,
+    updateForEdit = 103, locationForEdit = 105, onEditRemoveUpdateForEdit = 106,
 }
 
 interface IOffscreenCanvasMesssageParnet {
@@ -32,15 +31,9 @@ interface IOffscreenCanvasMessageResize extends IOffscreenCanvasMesssageParnet {
     r: number;
 }
 
-interface IOffscreenCanvasMessageFunctionsToWorker extends IOffscreenCanvasMesssageParnet {
-    type: OffscreenCanvasMesssageType.expendAll
-        | OffscreenCanvasMesssageType.collapseAll;
-}
-
 interface IOffscreenCanvasMessageFunctionsFromWorker extends IOffscreenCanvasMesssageParnet {
     type: OffscreenCanvasMesssageType.askForExtentedMouseMoveAndMaouseUp
         | OffscreenCanvasMesssageType.askForNormalMouseMoveAndMaouseUp
-        | OffscreenCanvasMesssageType.removeUpdateForEdit;
 }
 
 interface IOffscreenCanvasMessageScroll extends IOffscreenCanvasMesssageParnet {
@@ -58,15 +51,9 @@ interface IOffscreenCanvasMessageMouse extends IOffscreenCanvasMesssageParnet {
     y: number;
 }
 
-
 interface IOffscreenCanvasMessageKeyDown extends IOffscreenCanvasMesssageParnet {
     type: OffscreenCanvasMesssageType.keyDown;
     keycode: number;
-}
-
-interface IOffscreenCanvasMessageGroupBy extends IOffscreenCanvasMesssageParnet {
-    type: OffscreenCanvasMesssageType.setGroupBy;
-    groupBy?: string[];
 }
 
 interface IOffscreenCanvasMessageSetCursor extends IOffscreenCanvasMesssageParnet {
@@ -105,8 +92,6 @@ export type OffscreenCanvasMesssageToWorker<T = any> =
       IOffscreenCanvasMessageScroll
     | IOffscreenCanvasMessageCreate
     | IOffscreenCanvasMessageResize
-    | IOffscreenCanvasMessageFunctionsToWorker
-    | IOffscreenCanvasMessageGroupBy
     | IOffscreenCanvasMessageMouse
     | IOffscreenCanvasMessageKeyDown
     | IOffscreenCanvasMessageFocus

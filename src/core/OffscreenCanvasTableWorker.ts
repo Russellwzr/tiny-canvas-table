@@ -27,12 +27,6 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
 
     public updateColumns(col: Array<ICanvasTableColumnConf<T>>) {
         super.updateColumns(col);
-        const data: OffscreenCanvasMesssageFromWorker = {
-            canvasTableId: this.id,
-            type: OffscreenCanvasMesssageType.removeUpdateForEdit,
-        };
-
-        postMessage(data);
         this.hasUpdateForEdit = undefined;
     }
 
@@ -100,7 +94,7 @@ export class OffscreenCanvasTableWorker<T = any> extends CustomCanvasTable {
     protected drawCanvas(): void {
         if (this.context === undefined || this.dataIndex === undefined) {
             this.requestAnimationFrame = undefined;
-            this.askForReDraw(this.drawconf);
+            this.askForReDraw();
             return;
         }
 

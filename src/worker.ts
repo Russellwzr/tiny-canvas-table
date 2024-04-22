@@ -49,5 +49,4 @@ addEventListener('message', (message) => {
         offscreenCanvasTableWorker.message(message.data);
         return;
     }
-    postMessage('this is the response ' + message.data);
 });

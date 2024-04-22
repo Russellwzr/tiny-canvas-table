@@ -8,10 +8,10 @@ export class CanvasTableEdit<T = any> {
     private onRemove?: (cancel: boolean, newData: string) => void;
 
     constructor(col: ICanvasTableColumn<T>, row: number, data: string, cellHeight: number,
-                onRemve: (cancel: boolean, newData: string) => void) {
+                onRemove: (cancel: boolean, newData: string) => void) {
         this.column = col;
         this.row = row;
-        this.onRemove = onRemve;
+        this.onRemove = onRemove;
         this.inputeElement = document.createElement("input");
         this.inputeElement.type = "text";
         this.inputeElement.value = data;
